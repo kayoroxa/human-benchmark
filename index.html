@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Benchmarks</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0f1115;
+      --surface: #181c23;
+      --text: #f5f7fb;
+      --muted: #9aa5b4;
+      --border: #313948;
+      --accent: #7aa2ff;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      display: grid;
+      place-items: center;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    main { width: min(640px, calc(100% - 32px)); }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(28px, 5vw, 42px);
+      letter-spacing: -0.04em;
+    }
+
+    p {
+      margin: 8px 0 28px;
+      color: var(--muted);
+    }
+
+    a {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 18px 0;
+      color: inherit;
+      text-decoration: none;
+      border-top: 1px solid var(--border);
+    }
+
+    a:last-child { border-bottom: 1px solid var(--border); }
+    a:hover, a:focus-visible { color: var(--accent); }
+
+    .name { font-size: 18px; font-weight: 750; }
+    .meta { color: var(--muted); font-size: 14px; }
+    .arrow { font-size: 24px; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Benchmarks</h1>
+    <p>Escolha um desafio.</p>
+    <a href="benchmarks/ordenacao/">
+      <span>
+        <span class="name">Ordenação</span>
+        <span class="meta">Organize a cadeia de produção</span>
+      </span>
+      <span class="arrow" aria-hidden="true">→</span>
+    </a>
+  </main>
+</body>
+</html>

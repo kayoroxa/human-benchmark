@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Benchmark de Ordenação</title>
+<style>
+  :root{
+    --bg:#0f1115;
+    --panel:#181c23;
+    --panel2:#222834;
+    --text:#f5f7fb;
+    --muted:#9aa5b4;
+    --border:#313948;
+    --accent:#7aa2ff;
+    --ok:#4bd07c;
+    --bad:#ff6876;
+    --gold:#ffd76a;
+  }
+
+  *{
+    box-sizing:border-box;
+    -webkit-tap-highlight-color:transparent;
+  }
+
+  html,body{
+    margin:0;
+    width:100%;
+    height:100%;
+    overflow:hidden;
+    overscroll-behavior:none;
+    background:var(--bg);
+    color:var(--text);
+    font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+  }
+
+  body{
+    width:100vw;
+    height:100dvh;
+    touch-action:none;
+  }
+
+  button{font:inherit}
+
+  .app{
+    width:100vw;
+    height:100dvh;
+    overflow:hidden;
+    display:grid;
+    grid-template-rows:auto auto minmax(0,1fr) auto auto;
+    gap:6px;
+    padding:max(7px, env(safe-area-inset-top))
+            max(7px, env(safe-area-inset-right))
+            max(7px, env(safe-area-inset-bottom))
+            max(7px, env(safe-area-inset-left));
+  }
+
+  .top{
+    min-width:0;
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto auto;
+    align-items:center;
+    gap:8px;
+  }
+
+  .top h1{
+    margin:0;
+    font-size:16px;
+    line-height:1;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+
+  .timerBox,.attemptBox{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:9px;
+    padding:5px 8px;
+    white-space:nowrap;
+  }
+
+  .timerBox{
+    font-variant-numeric:tabular-nums;
+    font-weight:850;
+    font-size:14px;
+  }
+
+  .attemptBox{
+    color:var(--muted);
+    font-size:10px;
+  }
+
+  .stats{
+    display:grid;
+    grid-template-columns:repeat(7,minmax(0,1fr));
+    gap:4px;
+  }
+
+  .stat{
+    min-width:0;
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:9px;
+    padding:4px 2px;
+    text-align:center;
+  }
+
+  .stat .label{
+    display:block;
+    font-size:8px;
+    color:var(--muted);
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    line-height:1;
+  }
+
+  .stat strong{
+    display:block;
+    font-size:14px;
+    line-height:1.1;
+    margin-top:2px;
+  }
+
+  .chain{
+    position:relative;
+    min-height:0;
+    display:grid;
+    grid-template-rows:repeat(8,minmax(0,1fr));
+    gap:4px;
+  }
+
+  .row{
+    min-height:0;
+    display:grid;
+    grid-template-columns:25px minmax(0,1fr) 22px;
+    align-items:center;
+    gap:6px;
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:9px;
+    padding:3px 6px;
+    user-select:none;
+    -webkit-user-select:none;
+    touch-action:none;
+    cursor:grab;
+    transition:
+      transform .14s ease,
+      border-color .14s ease,
+      background .14s ease,
+      opacity .14s ease;
+  }
+
+  .row.dragging{
+    position:fixed;
+    z-index:999;
+    pointer-events:none;
+    cursor:grabbing;
+    border-color:var(--accent);
+    background:#242d3d;
+    opacity:.98;
+    transition:none;
+    box-shadow:0 12px 30px rgba(0,0,0,.36);
+  }
+
+  .row.placeholder{
+    border:1px dashed var(--accent);
+    background:rgba(122,162,255,.08);
+    opacity:.55;
+  }
+
+  .row.active{
+    border-color:var(--accent);
+    background:#222b3b;
+  }
+
+  .row.done{
+    border-color:#2f6c48;
+  }
+
+  .row.error{
+    border-color:var(--bad);
+    background:#311d23;
+  }
+
+  .num{
+    width:21px;
+    height:21px;
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:var(--panel2);
+    color:var(--muted);
+    font-size:9px;
+  }
+
+  .action-copy{min-width:0}
+
+  .action-name{
+    font-size:11px;
+    line-height:1.05;
+    font-weight:760;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+
+  .action-eq{
+    margin-top:1px;
+    font-size:9px;
+    line-height:1.05;
+    color:var(--muted);
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+
+  .handle{
+    color:var(--muted);
+    font-size:15px;
+    text-align:center;
+    letter-spacing:-4px;
+    transform:rotate(90deg);
+    opacity:.75;
+  }
+
+  .result{
+    min-height:36px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    padding:4px 7px;
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:9px;
+    font-size:10px;
+    line-height:1.15;
+  }
+
+  .ok{color:var(--ok);font-weight:800}
+  .bad{color:var(--bad);font-weight:800}
+  .gold{color:var(--gold);font-weight:900}
+
+  .controls{
+    display:grid;
+    grid-template-columns:1.1fr .9fr .9fr;
+    gap:5px;
+  }
+
+  .btn{
+    min-height:38px;
+    border:0;
+    border-radius:9px;
+    font-weight:850;
+    font-size:12px;
+  }
+
+  #executeBtn{background:var(--accent);color:#fff}
+  #resetBtn{background:#3a3240;color:#f1d7ff}
+  #newBtn{background:#2a3240;color:var(--text)}
+  .btn:disabled{opacity:.42}
+
+  .overlay{
+    position:fixed;
+    inset:0;
+    z-index:3000;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:var(--bg);
+    padding:24px;
+  }
+
+  .overlay.hidden{display:none}
+
+  .startWrap{
+    width:min(360px,92vw);
+    text-align:center;
+  }
+
+  .startTitle{
+    font-size:20px;
+    font-weight:900;
+    margin-bottom:8px;
+  }
+
+  .startSub{
+    color:var(--muted);
+    font-size:12px;
+    line-height:1.35;
+    margin-bottom:24px;
+  }
+
+  .bigPlay{
+    width:150px;
+    height:150px;
+    border-radius:50%;
+    border:2px solid #344054;
+    background:var(--panel);
+    color:white;
+    font-size:64px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    margin:0 auto;
+    padding:0 0 0 10px;
+    box-shadow:0 18px 50px rgba(0,0,0,.35);
+  }
+
+  .bigPlay:active{
+    transform:scale(.98);
+  }
+
+  .startHint{
+    margin-top:14px;
+    color:var(--muted);
+    font-size:11px;
+  }
+
+  @media(max-height:690px){
+    .app{gap:4px;padding:5px}
+    .top h1{font-size:14px}
+    .timerBox{font-size:12px;padding:4px 6px}
+    .attemptBox{font-size:9px;padding:4px 6px}
+    .stat{padding:3px 1px}
+    .stat strong{font-size:12px}
+    .row{padding:2px 5px;gap:4px}
+    .action-name{font-size:10px}
+    .action-eq{font-size:8px}
+    .result{min-height:31px;font-size:9px;padding:3px 5px}
+    .btn{min-height:33px;font-size:11px}
+  }
+
+  @media(max-width:360px){
+    .top{gap:5px}
+    .top h1{font-size:13px}
+    .timerBox{font-size:11px}
+    .stats{gap:3px}
+    .row{grid-template-columns:22px minmax(0,1fr) 18px;padding-inline:4px}
+    .handle{font-size:13px}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <h1>🧠 Benchmark de ordenação</h1>
+    <div id="timer" class="timerBox">⏱ 00:00.0</div>
+    <div id="attempts" class="attemptBox">0 tent.</div>
+  </div>
+
+  <div class="stats" id="stats"></div>
+
+  <div id="chain" class="chain"></div>
+
+  <div id="result" class="result">
+    Ordene todos os cards e execute.
+  </div>
+
+  <div class="controls">
+    <button id="executeBtn" class="btn" type="button">▶ Executar</button>
+    <button id="resetBtn" class="btn" type="button">↺ Reiniciar</button>
+    <button id="newBtn" class="btn" type="button">✦ Novo</button>
+  </div>
+</div>
+
+<div id="overlay" class="overlay">
+  <div class="startWrap">
+    <div class="startTitle">Puzzle pronto</div>
+    <div class="startSub">
+      Ao começar, o puzzle aparece e o timer inicia imediatamente.
+      Existe uma única ordem correta.
+    </div>
+    <button id="startBtn" class="bigPlay" type="button" aria-label="Começar">▶</button>
+    <div class="startHint">Toque para começar</div>
+  </div>
+</div>
+
+<script>
+const els={
+  chain:document.getElementById('chain'),
+  stats:document.getElementById('stats'),
+  result:document.getElementById('result'),
+  timer:document.getElementById('timer'),
+  attempts:document.getElementById('attempts'),
+  execute:document.getElementById('executeBtn'),
+  reset:document.getElementById('resetBtn'),
+  newBtn:document.getElementById('newBtn'),
+  overlay:document.getElementById('overlay'),
+  startBtn:document.getElementById('startBtn')
+};
+
+let puzzle=null;
+let order=[];
+let initialOrder=[];
+let playing=false;
+let started=false;
+let solved=false;
+let attempts=0;
+let timerStart=0;
+let elapsedBeforeStop=0;
+let timerRAF=null;
+let drag=null;
+
+const clone=o=>JSON.parse(JSON.stringify(o));
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+
+const resourceMeta={
+  money:{emoji:'💰',label:'Caixa'},
+  wood:{emoji:'🪵',label:'Madeira'},
+  basic:{emoji:'🪑',label:'Cadeira'},
+  metal:{emoji:'🔩',label:'Metal'},
+  gear:{emoji:'⚙️',label:'Engren.'},
+  tool:{emoji:'🛠️',label:'Ferram.'},
+  premium:{emoji:'📦',label:'Produto'}
+};
+
+function formatTime(ms){
+  const total=Math.max(0,ms);
+  const min=Math.floor(total/60000);
+  const sec=Math.floor((total%60000)/1000);
+  const tenth=Math.floor((total%1000)/100);
+  return `${String(min).padStart(2,'0')}:${String(sec).padStart(2,'0')}.${tenth}`;
+}
+
+function renderTimer(ms=0){
+  els.timer.textContent=`⏱ ${formatTime(ms)}`;
+}
+
+function timerLoop(){
+  if(!started || solved) return;
+  renderTimer(performance.now()-timerStart);
+  timerRAF=requestAnimationFrame(timerLoop);
+}
+
+function startTimer(){
+  cancelAnimationFrame(timerRAF);
+  timerStart=performance.now();
+  elapsedBeforeStop=0;
+  renderTimer(0);
+  timerRAF=requestAnimationFrame(timerLoop);
+}
+
+function stopTimer(){
+  if(!started) return;
+  elapsedBeforeStop=performance.now()-timerStart;
+  cancelAnimationFrame(timerRAF);
+  renderTimer(elapsedBeforeStop);
+}
+
+function resetTimer(){
+  cancelAnimationFrame(timerRAF);
+  timerStart=0;
+  elapsedBeforeStop=0;
+  renderTimer(0);
+}
+
+function describe(a){
+  const left=[],right=[];
+  if(a.moneyCost) left.push(`💰${a.moneyCost}`);
+
+  for(const [k,v] of Object.entries(a.consume||{})){
+    left.push(`${resourceMeta[k].emoji}${v}`);
+  }
+
+  for(const [k,v] of Object.entries(a.produce||{})){
+    right.push(`${resourceMeta[k].emoji}${v}`);
+  }
+
+  if(a.moneyGain) right.push(`💰${a.moneyGain}`);
+  return `${left.join(' + ')||'—'} → ${right.join(' + ')||'—'}`;
+}
+
+function canApply(a,s){
+  if(a.moneyCost && s.money<a.moneyCost) return false;
+
+  for(const [k,v] of Object.entries(a.consume||{})){
+    if((s[k]||0)<v) return false;
+  }
+
+  return true;
+}
+
+function apply(a,s){
+  if(!canApply(a,s)) return null;
+
+  const n=clone(s);
+
+  if(a.moneyCost) n.money-=a.moneyCost;
+  for(const [k,v] of Object.entries(a.consume||{})) n[k]-=v;
+  for(const [k,v] of Object.entries(a.produce||{})) n[k]=(n[k]||0)+v;
+  if(a.moneyGain) n.money+=a.moneyGain;
+
+  return n.money<0 ? null : n;
+}
+
+/*
+  A dificuldade vem da estrutura, não da quantidade de informação:
+  - no início, Comprar madeira E Comprar metal são válidos;
+  - comprar metal parece legítimo e permite mais 2 ações;
+  - só depois a pessoa percebe que ficou sem caixa e sem madeira;
+  - a rota correta usa uma cadeia barata primeiro para gerar caixa,
+    preserva 1 madeira e só então entra na cadeia cara.
+
+  O JavaScript ainda valida o puzzle por força bruta:
+  - exatamente 1 permutação completa precisa funcionar;
+  - precisa existir uma rota errada que sobreviva pelo menos 3 passos.
+*/
+function makeCandidate(){
+  const startMoney=10+Math.floor(Math.random()*5); // 10..14
+  const woodCost=4+Math.floor(Math.random()*3);    // 4..6
+
+  // Metal é comprável logo no começo, mas caro o suficiente
+  // para impedir a compra posterior da madeira se escolhido primeiro.
+  const metalCost=startMoney-1;
+
+  // Após a venda básica, precisa voltar a ser possível comprar metal.
+  const basicSale=
+    Math.max(
+      8+Math.floor(Math.random()*5),
+      metalCost-(startMoney-woodCost)+1
+    );
+
+  const premiumSale=18+Math.floor(Math.random()*9);
+
+  const actions=[
+    {
+      id:'buyWood',
+      name:'Comprar 2 madeiras',
+      moneyCost:woodCost,
+      produce:{wood:2}
+    },
+    {
+      id:'makeBasic',
+      name:'Fabricar cadeira',
+      consume:{wood:1},
+      produce:{basic:1}
+    },
+    {
+      id:'sellBasic',
+      name:'Vender cadeira',
+      consume:{basic:1},
+      moneyGain:basicSale
+    },
+    {
+      id:'buyMetal',
+      name:'Comprar metal',
+      moneyCost:metalCost,
+      produce:{metal:1}
+    },
+    {
+      id:'forgeGear',
+      name:'Forjar engrenagem',
+      consume:{metal:1},
+      produce:{gear:1}
+    },
+    {
+      id:'assembleTool',
+      name:'Montar ferramenta',
+      consume:{gear:1},
+      produce:{tool:1}
+    },
+    {
+      id:'makePremium',
+      name:'Fabricar produto final',
+      consume:{tool:1,wood:1},
+      produce:{premium:1}
+    },
+    {
+      id:'sellPremium',
+      name:'Vender produto final',
+      consume:{premium:1},
+      moneyGain:premiumSale
+    }
+  ];
+
+  return {
+    start:{
+      money:startMoney,
+      wood:0,
+      basic:0,
+      metal:0,
+      gear:0,
+      tool:0,
+      premium:0
+    },
+    actions
+  };
+}
+
+function evaluatePermutation(p,perm){
+  let state=clone(p.start);
+  let validPrefix=0;
+
+  for(const id of perm){
+    const action=p.actions.find(a=>a.id===id);
+    const next=apply(action,state);
+    if(!next) return {valid:false,prefix:validPrefix};
+    state=next;
+    validPrefix++;
+  }
+
+  return {valid:true,prefix:validPrefix,final:state};
+}
+
+function permutations(arr){
+  const out=[];
+  const a=arr.slice();
+
+  function rec(pos){
+    if(pos===a.length){
+      out.push(a.slice());
+      return;
+    }
+
+    for(let i=pos;i<a.length;i++){
+      [a[pos],a[i]]=[a[i],a[pos]];
+      rec(pos+1);
+      [a[pos],a[i]]=[a[i],a[pos]];
+    }
+  }
+
+  rec(0);
+  return out;
+}
+
+function analyzePuzzle(p){
+  const ids=p.actions.map(a=>a.id);
+  const perms=permutations(ids);
+
+  const solutions=[];
+  let maxWrongPrefix=0;
+  let wrongPrefix3=0;
+
+  for(const perm of perms){
+    const r=evaluatePermutation(p,perm);
+
+    if(r.valid){
+      solutions.push({
+        order:perm.slice(),
+        finalMoney:r.final.money
+      });
+    }else{
+      maxWrongPrefix=Math.max(maxWrongPrefix,r.prefix);
+      if(r.prefix>=3) wrongPrefix3++;
+    }
+  }
+
+  const initialValid=p.actions.filter(a=>canApply(a,p.start)).length;
+
+  return {
+    solutions,
+    initialValid,
+    maxWrongPrefix,
+    wrongPrefix3
+  };
+}
+
+function generatePuzzle(){
+  for(let i=0;i<30;i++){
+    const p=makeCandidate();
+    const info=analyzePuzzle(p);
+
+    if(
+      info.solutions.length===1 &&
+      info.initialValid>=2 &&
+      info.maxWrongPrefix>=3 &&
+      info.wrongPrefix3>=5
+    ){
+      p.solution=info.solutions[0].order;
+      p.finalMoney=info.solutions[0].finalMoney;
+      p.analysis=info;
+      return p;
+    }
+  }
+
+  // Estrutura é desenhada para passar sempre; isto é só fallback.
+  const p=makeCandidate();
+  const info=analyzePuzzle(p);
+  p.solution=info.solutions[0]?.order || p.actions.map(a=>a.id);
+  p.finalMoney=info.solutions[0]?.finalMoney || p.start.money;
+  p.analysis=info;
+  return p;
+}
+
+function shuffle(arr){
+  const x=arr.slice();
+
+  for(let i=x.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [x[i],x[j]]=[x[j],x[i]];
+  }
+
+  return x;
+}
+
+function renderStats(state){
+  const visible=['money','wood','basic','metal','gear','tool','premium'];
+  els.stats.innerHTML='';
+
+  for(const key of visible){
+    const meta=resourceMeta[key];
+    const div=document.createElement('div');
+    div.className='stat';
+    const value=key==='money' ? `R$${state[key]}` : (state[key]||0);
+
+    div.innerHTML=`
+      <span class="label">${meta.emoji} ${meta.label}</span>
+      <strong>${value}</strong>
+    `;
+
+    els.stats.appendChild(div);
+  }
+}
+
+function makeRow(id,index){
+  const a=puzzle.actions.find(x=>x.id===id);
+  const row=document.createElement('div');
+  row.className='row';
+  row.dataset.id=id;
+  row.dataset.index=index;
+
+  const num=document.createElement('div');
+  num.className='num';
+  num.textContent=index+1;
+
+  const copy=document.createElement('div');
+  copy.className='action-copy';
+  copy.innerHTML=`
+    <div class="action-name">${a.name}</div>
+    <div class="action-eq">${describe(a)}</div>
+  `;
+
+  const handle=document.createElement('div');
+  handle.className='handle';
+  handle.textContent='•••';
+
+  row.append(num,copy,handle);
+
+  if(started && !playing && !solved){
+    row.addEventListener('pointerdown',startDrag);
+  }
+
+  return row;
+}
+
+function renderChain(){
+  els.chain.innerHTML='';
+  order.forEach((id,i)=>els.chain.appendChild(makeRow(id,i)));
+}
+
+function restoreReadyState(message='Ordene todos os cards e execute.'){
+  renderStats(puzzle.start);
+  renderChain();
+  els.result.textContent=message;
+}
+
+function startDrag(e){
+  if(!started || playing || solved || drag) return;
+  if(e.button!==undefined && e.button!==0) return;
+
+  e.preventDefault();
+
+  // Ao mexer de novo após uma tentativa, volta a mostrar o estado inicial.
+  renderStats(puzzle.start);
+
+  const row=e.currentTarget;
+  const rect=row.getBoundingClientRect();
+
+  const placeholder=document.createElement('div');
+  placeholder.className='row placeholder';
+  placeholder.style.height=`${rect.height}px`;
+
+  row.after(placeholder);
+
+  row.classList.add('dragging');
+  row.style.left=`${rect.left}px`;
+  row.style.top=`${rect.top}px`;
+  row.style.width=`${rect.width}px`;
+  row.style.height=`${rect.height}px`;
+
+  document.body.appendChild(row);
+
+  drag={
+    pointerId:e.pointerId,
+    row,
+    placeholder,
+    offsetY:e.clientY-rect.top
+  };
+
+  row.setPointerCapture?.(e.pointerId);
+
+  window.addEventListener('pointermove',onDragMove,{passive:false});
+  window.addEventListener('pointerup',endDrag,{passive:false});
+  window.addEventListener('pointercancel',endDrag,{passive:false});
+}
+
+function onDragMove(e){
+  if(!drag || e.pointerId!==drag.pointerId) return;
+  e.preventDefault();
+
+  drag.row.style.top=`${e.clientY-drag.offsetY}px`;
+
+  const siblings=[...els.chain.querySelectorAll('.row:not(.placeholder)')];
+  let inserted=false;
+
+  for(const sibling of siblings){
+    const r=sibling.getBoundingClientRect();
+
+    if(e.clientY<r.top+r.height/2){
+      els.chain.insertBefore(drag.placeholder,sibling);
+      inserted=true;
+      break;
+    }
+  }
+
+  if(!inserted){
+    els.chain.appendChild(drag.placeholder);
+  }
+}
+
+function endDrag(e){
+  if(!drag || e.pointerId!==drag.pointerId) return;
+  e.preventDefault();
+
+  window.removeEventListener('pointermove',onDragMove);
+  window.removeEventListener('pointerup',endDrag);
+  window.removeEventListener('pointercancel',endDrag);
+
+  const newIndex=[...els.chain.children].indexOf(drag.placeholder);
+  const movedId=drag.row.dataset.id;
+
+  drag.row.remove();
+  drag.placeholder.replaceWith(drag.row);
+
+  drag.row.classList.remove('dragging');
+  drag.row.removeAttribute('style');
+
+  const oldIndex=order.indexOf(movedId);
+  order.splice(oldIndex,1);
+  order.splice(newIndex,0,movedId);
+
+  drag=null;
+  renderChain();
+}
+
+async function executeOrder(){
+  if(!started || playing || solved || drag) return;
+
+  playing=true;
+  attempts++;
+  els.attempts.textContent=`${attempts} tent.`;
+
+  els.execute.disabled=true;
+  els.reset.disabled=true;
+  els.newBtn.disabled=true;
+  renderChain();
+
+  let state=clone(puzzle.start);
+  renderStats(state);
+
+  for(let i=0;i<order.length;i++){
+    const row=els.chain.children[i];
+    const action=puzzle.actions.find(a=>a.id===order[i]);
+
+    row.classList.add('active');
+    els.result.innerHTML=`Executando ${i+1}/8: <b>${action.name}</b>`;
+
+    await sleep(1000);
+
+    const next=apply(action,state);
+
+    if(!next){
+      row.classList.remove('active');
+      row.classList.add('error');
+
+      els.result.innerHTML=`
+        <span class="bad">❌ A sequência quebrou no passo ${i+1}.</span>
+      `;
+
+      playing=false;
+      els.execute.disabled=false;
+      els.reset.disabled=false;
+      els.newBtn.disabled=false;
+
+      // O timer continua e a mesma ordem permanece.
+      // Re-renderiza agora com playing=false para reativar o drag-and-drop.
+      renderChain();
+
+      // Mantém um destaque visual no passo em que quebrou.
+      if(els.chain.children[i]){
+        els.chain.children[i].classList.add('error');
+      }
+
+      return;
+    }
+
+    state=next;
+    renderStats(state);
+
+    row.classList.remove('active');
+    row.classList.add('done');
+  }
+
+  const correct=order.join('|')===puzzle.solution.join('|');
+
+  if(correct){
+    solved=true;
+    stopTimer();
+
+    els.result.innerHTML=`
+      <span class="gold">🏆 Resolvido em ${formatTime(elapsedBeforeStop)} • ${attempts} tentativa${attempts===1?'':'s'}</span>
+    `;
+  }else{
+    // O solver garante uma única ordem completa válida; normalmente não chega aqui.
+    els.result.innerHTML=`<span class="ok">Sequência executada.</span>`;
+  }
+
+  playing=false;
+  els.execute.disabled=solved;
+  els.reset.disabled=false;
+  els.newBtn.disabled=false;
+  renderChain();
+}
+
+function showOverlay(){
+  els.overlay.classList.remove('hidden');
+}
+
+function hideOverlay(){
+  els.overlay.classList.add('hidden');
+}
+
+function startChallenge(){
+  if(started || playing) return;
+
+  started=true;
+  solved=false;
+  attempts=0;
+  els.attempts.textContent='0 tent.';
+
+  hideOverlay();
+  restoreReadyState('Ordene os cards. O timer já está correndo.');
+  startTimer();
+}
+
+function resetSamePuzzle(){
+  if(playing || drag) return;
+
+  started=false;
+  solved=false;
+  attempts=0;
+  order=initialOrder.slice();
+
+  els.attempts.textContent='0 tent.';
+  resetTimer();
+  restoreReadyState('Puzzle reiniciado.');
+  showOverlay();
+
+  els.execute.disabled=false;
+}
+
+function newPuzzle(){
+  if(playing || drag) return;
+
+  puzzle=generatePuzzle();
+
+  let shuffled=shuffle(puzzle.actions.map(a=>a.id));
+
+  while(shuffled.join('|')===puzzle.solution.join('|')){
+    shuffled=shuffle(puzzle.actions.map(a=>a.id));
+  }
+
+  initialOrder=shuffled.slice();
+  order=shuffled.slice();
+
+  started=false;
+  solved=false;
+  attempts=0;
+
+  els.attempts.textContent='0 tent.';
+  resetTimer();
+  restoreReadyState('Novo puzzle pronto.');
+  showOverlay();
+
+  els.execute.disabled=false;
+}
+
+els.startBtn.addEventListener('click',startChallenge);
+els.execute.addEventListener('click',executeOrder);
+els.reset.addEventListener('click',resetSamePuzzle);
+els.newBtn.addEventListener('click',newPuzzle);
+
+newPuzzle();
+</script>
+</body>
+</html>
