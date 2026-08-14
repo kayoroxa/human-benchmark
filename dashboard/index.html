@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Histórico dos benchmarks</title>
+  <style>
+    :root{color-scheme:dark;--bg:#0d1117;--surface:#151b23;--line:#2b3440;--text:#f2f5f8;--muted:#929daa;--accent:#78a6ff;--danger:#ff8d85}
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100dvh;background:var(--bg);color:var(--text);font:15px/1.45 Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
+    button,select{font:inherit}
+    button,a,select{min-height:44px}
+    button{border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--text);padding:8px 13px;cursor:pointer}
+    button:hover,button:focus-visible,select:focus-visible,a:focus-visible{border-color:var(--accent);outline:2px solid #78a6ff44;outline-offset:2px}
+    header{position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:max(14px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) 14px max(16px,env(safe-area-inset-left));border-bottom:1px solid var(--line);background:#0d1117ed;backdrop-filter:blur(12px)}
+    h1{margin:0;font-size:clamp(21px,5vw,30px);letter-spacing:-.035em}
+    .back{display:inline-flex;align-items:center;color:var(--accent);text-decoration:none;white-space:nowrap}
+    main{width:min(1180px,100%);margin:auto;padding:22px max(16px,env(safe-area-inset-right)) max(32px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
+    .heading{display:flex;align-items:end;justify-content:space-between;gap:16px;margin-bottom:12px}
+    h2{margin:0;font-size:13px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted)}
+    .total{color:var(--muted);font-variant-numeric:tabular-nums}
+    .averages{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));border-top:1px solid var(--line);margin-bottom:34px}
+    .average{min-width:0;padding:14px 14px 14px 0;border-bottom:1px solid var(--line)}
+    .average:nth-child(even){padding-left:14px}
+    .average-name{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);font-size:13px}
+    .average-value{display:block;margin-top:2px;font-size:25px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.03em}
+    .average-meta{font-size:12px;color:var(--muted)}
+    .toolbar{display:flex;align-items:center;gap:8px}
+    select{max-width:220px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--text);padding:8px 34px 8px 11px}
+    .danger{color:var(--danger)}
+    .history{border-top:1px solid var(--line)}
+    .row{display:grid;grid-template-columns:minmax(180px,1.5fr) minmax(145px,1fr) 110px 90px 155px;align-items:center;gap:12px;min-height:63px;border-bottom:1px solid var(--line)}
+    .row-head{min-height:40px;color:var(--muted);font-size:11px;font-weight:750;text-transform:uppercase;letter-spacing:.07em}
+    .name{font-weight:700}.seed{display:block;color:var(--muted);font-size:11px}.metric,.time{font-variant-numeric:tabular-nums}.metric{font-weight:750}.empty{padding:48px 0;color:var(--muted);text-align:center;border-bottom:1px solid var(--line)}
+    @media(max-width:720px){header{align-items:flex-start}.row-head{display:none}.row{grid-template-columns:1fr auto;gap:3px 12px;padding:12px 0}.row .name-cell{grid-column:1}.row .metric{grid-column:2;grid-row:1;text-align:right}.row .time{grid-column:1;color:var(--muted);font-size:12px}.row .attempts{display:none}.row time{grid-column:2;grid-row:2;text-align:right;color:var(--muted);font-size:12px}.heading{align-items:flex-start;flex-direction:column}.toolbar{width:100%}.toolbar select{flex:1;min-width:0}.averages{grid-template-columns:1fr 1fr}.average{padding:12px 8px 12px 0}.average:nth-child(even){padding-left:8px}.average-value{font-size:21px}}
+    @media(max-width:390px){.averages{grid-template-columns:1fr}.average:nth-child(even){padding-left:0}.back{font-size:13px}}
+  </style>
+</head>
+<body>
+  <header><h1>Histórico</h1><a class="back" href="../">← Benchmarks</a></header>
+  <main>
+    <div class="heading"><h2>Médias por benchmark</h2><span class="total" id="total"></span></div>
+    <section class="averages" id="averages" aria-label="Médias por benchmark"></section>
+    <div class="heading">
+      <h2>Todas as sessões</h2>
+      <div class="toolbar"><select id="filter" aria-label="Filtrar benchmark"><option value="">Todos</option></select><button class="danger" id="clear" type="button">Limpar</button></div>
+    </div>
+    <section class="history" id="history" aria-label="Histórico de sessões"></section>
+  </main>
+  <script src="../benchmark-history.js"></script>
+  <script>
+    (() => {
+      const catalog = [
+        ['ordenacao','Ordenação'],['diagnostico','Painel de diagnóstico'],['agenda','Agenda de recursos'],['carteira','Carteira de decisões'],
+        ['regra-oculta','Regra oculta'],['fluxo','Rede de fluxo'],['memoria-palavras','Memória de palavras'],['caminho','Caminho programado']
+      ];
+      const $ = id => document.getElementById(id);
+      const number = new Intl.NumberFormat('pt-BR', { maximumFractionDigits:1 });
+      const date = new Intl.DateTimeFormat('pt-BR', { dateStyle:'short', timeStyle:'short' });
+      const formatTime = ms => { if (!Number.isFinite(ms)) return 'Sem tempo'; const seconds=Math.round(ms/1000); return `${Math.floor(seconds/60)}min ${String(seconds%60).padStart(2,'0')}s`; };
+      const formatMetric = metric => `${Number(metric.value).toFixed(metric.decimals || 0).replace('.', ',')}${metric.suffix || ''}`;
+
+      function render() {
+        const results = BenchmarkHistory.read();
+        const selected = $('filter').value;
+        $('total').textContent = `${results.length} ${results.length === 1 ? 'sessão' : 'sessões'}`;
+        $('clear').disabled = results.length === 0;
+        $('averages').innerHTML = catalog.map(([id,name]) => {
+          const entries=results.filter(item=>item.benchmark===id);
+          if (!entries.length) return `<article class="average"><span class="average-name">${name}</span><strong class="average-value">—</strong><span class="average-meta">Sem sessões</span></article>`;
+          const average=entries.reduce((sum,item)=>sum+item.metric.value,0)/entries.length;
+          const times=entries.filter(item=>Number.isFinite(item.timeMs));
+          const averageTime=times.length?formatTime(times.reduce((sum,item)=>sum+item.timeMs,0)/times.length):'sem cronômetro';
+          const metric={...entries[0].metric,value:average,decimals:average%1?1:entries[0].metric.decimals};
+          return `<article class="average"><span class="average-name">${name}</span><strong class="average-value">${formatMetric(metric)}</strong><span class="average-meta">${entries[0].metric.label} · ${entries.length} ${entries.length===1?'sessão':'sessões'} · ${averageTime}</span></article>`;
+        }).join('');
+
+        const filtered=selected?results.filter(item=>item.benchmark===selected):results;
+        $('history').innerHTML = filtered.length ? `<div class="row row-head"><span>Benchmark</span><span>Resultado</span><span>Tempo</span><span>Tentativas</span><span>Data</span></div>${filtered.map(item=>`<article class="row"><span class="name-cell"><span class="name">${item.name}</span><span class="seed">seed ${item.seed || '—'}</span></span><span class="metric">${formatMetric(item.metric)}</span><span class="time">${formatTime(item.timeMs)}</span><span class="attempts">${item.attempts ?? '—'}</span><time datetime="${item.completedAt}">${date.format(new Date(item.completedAt))}</time></article>`).join('')}` : '<div class="empty">Nenhuma sessão salva.</div>';
+      }
+
+      $('filter').innerHTML += catalog.map(([id,name])=>`<option value="${id}">${name}</option>`).join('');
+      $('filter').addEventListener('change',render);
+      $('clear').addEventListener('click',()=>{if(confirm('Apagar todo o histórico salvo neste navegador?')){localStorage.removeItem(BenchmarkHistory.key);render()}});
+      window.addEventListener('storage',render);
+      render();
+    })();
+  </script>
+</body>
+</html>

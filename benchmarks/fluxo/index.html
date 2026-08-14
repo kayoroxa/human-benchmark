@@ -21,6 +21,7 @@
     <nav class="actions" aria-label="Controles"><button id="execute-button" data-testid="execute-button" class="primary" type="button">Executar</button><button id="reset-button" data-testid="reset-button" type="button">Reiniciar</button><button id="new-button" data-testid="new-button" type="button">Novo</button></nav>
   </main>
   <div id="overlay" class="overlay"><div class="modal"><h2>Rede de fluxo</h2><p>Distribua nove unidades entre três fontes e três destinos pelo menor custo.</p><button id="start-button" data-testid="start-button" type="button">Iniciar</button><button class="tutorial-launch" data-tutorial-button data-testid="tutorial-button" type="button">Tutorial</button><button id="overlay-seed-button" data-testid="overlay-seed-button" class="seed-control" type="button">Abrir seed</button></div></div>
+  <script src="../../benchmark-history.js"></script>
   <script>
     (() => {
       const $ = id => document.getElementById(id);
@@ -64,7 +65,7 @@
         attempts++;
         const remaining = Object.entries(template.demand).reduce((sum, [key, demand]) => sum + demand - sentTo(key), 0);
         if (remaining) { showMessage(`Ainda faltam ${remaining} unidade${remaining === 1 ? '' : 's'} nos destinos.`, 'bad'); return; }
-        if (cost() === template.optimal) { finished = true; running = false; clearInterval(timerId); showMessage(`Otimizado: custo ${cost()} em ${$('timer').textContent} · ${attempts} tentativa${attempts === 1 ? '' : 's'}.`, 'good'); }
+        if (cost() === template.optimal) { finished = true; running = false; clearInterval(timerId); showMessage(`Otimizado: custo ${cost()} em ${$('timer').textContent} · ${attempts} tentativa${attempts === 1 ? '' : 's'}.`, 'good'); BenchmarkHistory.save({ benchmark:'fluxo', name:'Rede de fluxo', seed, timeMs:performance.now()-startedAt, attempts, metric:{ label:'Tentativas médias', value:attempts }, details:{ cost:cost(), optimalCost:template.optimal } }); }
         else showMessage(`Demanda atendida por custo ${cost()}. Existe uma distribuição mais barata; revise as rotas que competem pela mesma fonte.`, 'bad');
       }
       function openSeed() { const value=window.prompt('Digite uma seed de até 10 números.',seed); if(value===null)return; if(!/^\d{1,10}$/.test(value)){ showMessage('Seed inválida. Use de 1 a 10 números.','bad'); return; } seed=Number(value) >>> 0; history.replaceState(null, '', `?seed=${seed}`); reset(); }

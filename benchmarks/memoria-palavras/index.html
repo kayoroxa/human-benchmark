@@ -263,6 +263,7 @@
     </div>
   </section>
 
+  <script src="../../benchmark-history.js"></script>
   <script>
     (() => {
       const words = [
@@ -366,6 +367,7 @@
         running = false;
         $('final-score').textContent = score;
         $('result').hidden = false;
+        BenchmarkHistory.save({ benchmark:'memoria-palavras', name:'Memória de palavras', seed, attempts:turn, metric:{ label:'Pontuação média', value:score, suffix:' pts' }, details:{ errors:3, words:turn } });
       }
 
       function answer(answeredSeen) {

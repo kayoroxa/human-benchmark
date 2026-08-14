@@ -17,6 +17,7 @@
     <nav class="controls" aria-label="Controles"><button id="reset-button" data-testid="reset-button" type="button">Reiniciar</button><button id="new-button" data-testid="new-button" type="button">Novo</button></nav>
   </main>
   <div id="overlay" class="overlay"><div class="modal"><h2>Regra oculta</h2><p>Descubra a relação entre quatro símbolos e classifique oito casos.</p><button id="start-button" data-testid="start-button" type="button">Iniciar</button><button class="tutorial-launch" data-tutorial-button data-testid="tutorial-button" type="button">Tutorial</button><button id="overlay-seed-button" data-testid="overlay-seed-button" class="seed-control" type="button">Abrir seed</button></div></div>
+  <script src="../../benchmark-history.js"></script>
   <script>
     (() => {
       const $ = id => document.getElementById(id);
@@ -64,6 +65,7 @@
         $('result').classList.remove('hidden');
         $('result').innerHTML = `<strong>Resultado concluído</strong><br>Precisão: ${correct} de ${cases.length} · Tempo: ${$('timer').textContent}`;
         $('case-counter').textContent = 'Sessão concluída';
+        BenchmarkHistory.save({ benchmark:'regra-oculta', name:'Regra oculta', seed, timeMs:performance.now()-startedAt, attempts:cases.length, metric:{ label:'Precisão média', value:correct/cases.length*100, suffix:'%', decimals:0 }, details:{ correct, total:cases.length } });
       }
       function reset() {
         stopTimer();

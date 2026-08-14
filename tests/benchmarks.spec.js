@@ -89,6 +89,8 @@ async function solvePathPuzzle(page) {
 test('index exposes every implemented benchmark', async ({ page }) => {
   await page.goto('/');
 
+  await expect(page.locator('a[href="dashboard/"]')).toBeVisible();
+
   for (const href of [
     'benchmarks/ordenacao/',
     'benchmarks/diagnostico/',
@@ -101,6 +103,22 @@ test('index exposes every implemented benchmark', async ({ page }) => {
   ]) {
     await expect(page.locator(`a[href="${href}"]`)).toBeVisible();
   }
+});
+
+test('dashboard calculates averages and lists saved sessions', async ({ page }) => {
+  await page.goto('/dashboard/');
+  await page.evaluate(() => {
+    BenchmarkHistory.save({ benchmark:'ordenacao', name:'Ordenação', seed:'abc', timeMs:30000, attempts:1, metric:{ label:'Tentativas médias', value:1 } });
+    BenchmarkHistory.save({ benchmark:'ordenacao', name:'Ordenação', seed:'def', timeMs:60000, attempts:3, metric:{ label:'Tentativas médias', value:3 } });
+  });
+  await page.reload();
+
+  const average = page.locator('.average').filter({ hasText:'Ordenação' });
+  await expect(average.locator('.average-value')).toHaveText('2');
+  await expect(average).toContainText('2 sessões');
+  await expect(average).toContainText('0min 45s');
+  await expect(page.locator('.history .row:not(.row-head)')).toHaveCount(2);
+  await expect(page.locator('.history')).toContainText('seed def');
 });
 
 test('every play overlay offers a guided tutorial without starting the session', async ({ page }) => {

@@ -448,6 +448,7 @@
   </div>
 </div>
 
+<script src="../../benchmark-history.js"></script>
 <script>
 const els={
   chain:document.getElementById('chain'),
@@ -1015,6 +1016,7 @@ async function executeOrder(){
     els.result.innerHTML=`
       <span class="gold">🏆 Resolvido em ${formatTime(elapsedBeforeStop)} • ${attempts} tentativa${attempts===1?'':'s'}</span>
     `;
+    BenchmarkHistory.save({benchmark:'ordenacao',name:'Ordenação',seed:currentSeed,timeMs:elapsedBeforeStop,attempts,metric:{label:'Tentativas médias',value:attempts},details:{actions:order.length}});
   }else{
     // O solver garante uma única ordem completa válida; normalmente não chega aqui.
     els.result.innerHTML=`<span class="ok">Sequência executada.</span>`;

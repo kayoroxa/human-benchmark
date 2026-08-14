@@ -49,6 +49,7 @@
   <script src="../../node_modules/blockly/blockly_compressed.js"></script>
   <script src="../../node_modules/blockly/blocks_compressed.js"></script>
   <script src="../../node_modules/blockly/msg/pt-br.js"></script>
+  <script src="../../benchmark-history.js"></script>
   <script>
     (() => {
       const $ = id => document.getElementById(id);
@@ -209,13 +210,14 @@
       }
       async function execute() {
         const count=blockCount(),topBlocks=blocklyWorkspace.getTopBlocks(true);
-        if (executing||count!==puzzle.solution.length||topBlocks.length!==1) return;
+        if (!running||executing||count!==puzzle.solution.length||topBlocks.length!==1) return;
         executing=true; $('blockly-editor').classList.add('locked'); attempts++; $('attempts').textContent=`${attempts} ${attempts===1?'tentativa':'tentativas'}`; updateProgram(); resetCharacter(); await wait(80);
         const state={cell:puzzle.start.slice(),heading:puzzle.heading,failed:'',steps:0};
         await runChain(topBlocks[0],state); blocklyWorkspace.highlightBlock(null);
         const won=!state.failed&&key(state.cell)===key(puzzle.goal);
         executing=false; $('blockly-editor').classList.remove('locked'); updateProgram();
         setFeedback(won?`Chegada alcançada em ${attempts} ${attempts===1?'tentativa':'tentativas'}!`:state.failed||'O programa terminou longe do pino.',won?'ok':'bad');
+        if(won){const elapsed=performance.now()-startedAt;clearInterval(timerId);running=false;updateProgram();BenchmarkHistory.save({benchmark:'caminho',name:'Caminho programado',seed,timeMs:elapsed,attempts,metric:{label:'Tentativas médias',value:attempts},details:{blocks:puzzle.solution.length,steps:state.steps}})}
       }
       function startTimer() {
         clearInterval(timerId); startedAt=performance.now();

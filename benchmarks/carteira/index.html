@@ -19,6 +19,7 @@
     <nav class="controls" aria-label="Controles"><button id="confirm-button" data-testid="confirm-button" class="primary" type="button" disabled>Confirmar escolha</button><button id="reset-button" data-testid="reset-button" type="button">Reiniciar</button><button id="new-button" data-testid="new-button" type="button">Novo</button></nav>
   </main>
   <div id="overlay" class="overlay"><div class="modal"><h2>Carteira de decisões</h2><p>Calcule e compare chance, ganho e perda em sete rodadas.</p><button id="start-button" data-testid="start-button" type="button">Iniciar</button><button class="tutorial-launch" data-tutorial-button data-testid="tutorial-button" type="button">Tutorial</button><button id="overlay-seed-button" data-testid="overlay-seed-button" class="seed-control" type="button">Abrir seed</button></div></div>
+  <script src="../../benchmark-history.js"></script>
   <script>
     (() => {
       const $ = id => document.getElementById(id);
@@ -50,7 +51,7 @@
         current.options.forEach((_, optionIndex) => $(`option-${optionIndex}`).addEventListener('click', () => { if (!running || finished) return; selected = optionIndex; document.querySelectorAll('.option').forEach((option, i) => option.setAttribute('aria-pressed', String(i === selected))); $('confirm-button').disabled = false; }));
         $('prompt').textContent = `Rodada ${index + 1}: escolha a maior expectativa.`; renderStats();
       }
-      function finish() { finished = true; running = false; clearInterval(timerId); $('options').classList.add('hidden'); $('prompt').classList.add('hidden'); $('feedback').classList.add('hidden'); $('confirm-button').disabled = true; $('result').classList.remove('hidden'); $('result').innerHTML = `<strong>Resultado concluído</strong><br>Resultado real: ${points} · Valor esperado escolhido: ${chosenEV.toFixed(1)} de ${maxEV.toFixed(1)} · Tempo: ${$('timer').textContent}`; }
+      function finish() { finished = true; running = false; clearInterval(timerId); $('options').classList.add('hidden'); $('prompt').classList.add('hidden'); $('feedback').classList.add('hidden'); $('confirm-button').disabled = true; $('result').classList.remove('hidden'); $('result').innerHTML = `<strong>Resultado concluído</strong><br>Resultado real: ${points} · Valor esperado escolhido: ${chosenEV.toFixed(1)} de ${maxEV.toFixed(1)} · Tempo: ${$('timer').textContent}`; BenchmarkHistory.save({ benchmark:'carteira', name:'Carteira de decisões', seed, timeMs:performance.now()-startedAt, attempts:rounds.length, metric:{ label:'Qualidade EV média', value:chosenEV/maxEV*100, suffix:'%', decimals:0 }, details:{ points, chosenEV, maxEV } }); }
       function confirm() {
         if (!running || selected < 0 || finished) return;
         const current = rounds[index]; const option = current.options[selected]; const best = Math.max(...current.options.map(value => value.ev)); const realized = current.outcomes[selected] < option.probability / 100 ? option.win : option.loss;
