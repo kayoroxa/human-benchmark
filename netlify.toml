@@ -1,6 +1,6 @@
 [build]
   publish = "dist"
-  command = """node -e "const fs=require('fs');fs.rmSync('dist',{recursive:true,force:true});fs.mkdirSync('dist/node_modules/blockly/msg',{recursive:true});for(const name of ['benchmarks','index.html','tutorial.js'])fs.cpSync(name,'dist/'+name,{recursive:true});for(const name of ['blockly_compressed.js','blocks_compressed.js'])fs.cpSync('node_modules/blockly/'+name,'dist/node_modules/blockly/'+name);fs.cpSync('node_modules/blockly/msg/pt-br.js','dist/node_modules/blockly/msg/pt-br.js')"""
+  command = "node -e \"const fs=require('fs');fs.rmSync('dist',{recursive:true,force:true});fs.mkdirSync('dist/node_modules/blockly/msg',{recursive:true});for(const name of ['benchmarks','index.html','tutorial.js'])fs.cpSync(name,'dist/'+name,{recursive:true});for(const name of ['blockly_compressed.js','blocks_compressed.js'])fs.cpSync('node_modules/blockly/'+name,'dist/node_modules/blockly/'+name);fs.cpSync('node_modules/blockly/msg/pt-br.js','dist/node_modules/blockly/msg/pt-br.js')\""
 
 [build.environment]
   NODE_VERSION = "22"
