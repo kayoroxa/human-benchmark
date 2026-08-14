@@ -58,9 +58,9 @@
   .top{
     min-width:0;
     display:grid;
-    grid-template-columns:minmax(0,1fr) auto auto;
+    grid-template-columns:minmax(0,1fr) auto auto auto;
     align-items:center;
-    gap:8px;
+    gap:6px;
   }
 
   .top h1{
@@ -72,7 +72,7 @@
     text-overflow:ellipsis;
   }
 
-  .timerBox,.attemptBox{
+  .timerBox,.attemptBox,.seedBtn{
     background:var(--panel);
     border:1px solid var(--border);
     border-radius:9px;
@@ -89,6 +89,12 @@
   .attemptBox{
     color:var(--muted);
     font-size:10px;
+  }
+
+  .seedBtn{
+    color:var(--accent);
+    font:700 10px/1 ui-monospace,SFMono-Regular,Consolas,monospace;
+    min-height:28px;
   }
 
   .stats{
@@ -276,6 +282,8 @@
 
   .overlay.hidden{display:none}
 
+  #seedOverlay{z-index:3100}
+
   .startWrap{
     width:min(360px,92vw);
     text-align:center;
@@ -320,11 +328,56 @@
     font-size:11px;
   }
 
+  .startSeedBtn{
+    margin-top:10px;
+    min-height:38px;
+    border:1px solid var(--border);
+    border-radius:9px;
+    background:var(--panel);
+    color:var(--accent);
+    font:700 11px/1 ui-monospace,SFMono-Regular,Consolas,monospace;
+  }
+
+  .seedDialog{
+    width:min(320px,92vw);
+    text-align:center;
+  }
+
+  .seedDialog label{
+    display:block;
+    margin-bottom:10px;
+    color:var(--muted);
+    font-size:12px;
+  }
+
+  .seedInput{
+    width:100%;
+    min-height:48px;
+    padding:0 12px;
+    border:1px solid var(--border);
+    border-radius:9px;
+    background:var(--panel);
+    color:var(--text);
+    font:800 20px/1 ui-monospace,SFMono-Regular,Consolas,monospace;
+    text-align:center;
+    text-transform:lowercase;
+  }
+
+  .seedActions{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:6px;
+    margin-top:10px;
+  }
+
+  .seedActions .btn{min-height:44px}
+
   @media(max-height:690px){
     .app{gap:4px;padding:5px}
     .top h1{font-size:14px}
     .timerBox{font-size:12px;padding:4px 6px}
     .attemptBox{font-size:9px;padding:4px 6px}
+    .seedBtn{min-height:25px;padding:4px 6px}
     .stat{padding:3px 1px}
     .stat strong{font-size:12px}
     .row{padding:2px 5px;gap:4px}
@@ -338,6 +391,7 @@
     .top{gap:5px}
     .top h1{font-size:13px}
     .timerBox{font-size:11px}
+    .seedBtn{font-size:9px}
     .stats{gap:3px}
     .row{grid-template-columns:22px minmax(0,1fr) 18px;padding-inline:4px}
     .handle{font-size:13px}
@@ -350,6 +404,7 @@
     <h1>🧠 Benchmark de ordenação</h1>
     <div id="timer" class="timerBox">⏱ 00:00.0</div>
     <div id="attempts" class="attemptBox">0 tent.</div>
+    <button id="seedBtn" class="seedBtn" type="button" aria-label="Abrir puzzle por seed"></button>
   </div>
 
   <div class="stats" id="stats"></div>
@@ -367,6 +422,18 @@
   </div>
 </div>
 
+<div id="seedOverlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="seedTitle">
+  <form id="seedForm" class="seedDialog">
+    <div id="seedTitle" class="startTitle">Abrir por seed</div>
+    <label for="seedInput">Use até 5 números ou letras minúsculas.</label>
+    <input id="seedInput" class="seedInput" type="text" inputmode="text" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="5" pattern="[0-9a-z]{1,5}" required />
+    <div class="seedActions">
+      <button id="seedCancelBtn" class="btn" type="button">Cancelar</button>
+      <button class="btn" type="submit">Abrir</button>
+    </div>
+  </form>
+</div>
+
 <div id="overlay" class="overlay">
   <div class="startWrap">
     <div class="startTitle">Puzzle pronto</div>
@@ -376,6 +443,7 @@
     </div>
     <button id="startBtn" class="bigPlay" type="button" aria-label="Começar">▶</button>
     <div class="startHint">Toque para começar</div>
+    <button id="overlaySeedBtn" class="startSeedBtn" type="button" aria-label="Abrir puzzle por seed"></button>
   </div>
 </div>
 
@@ -390,7 +458,13 @@ const els={
   reset:document.getElementById('resetBtn'),
   newBtn:document.getElementById('newBtn'),
   overlay:document.getElementById('overlay'),
-  startBtn:document.getElementById('startBtn')
+  startBtn:document.getElementById('startBtn'),
+  seedBtn:document.getElementById('seedBtn'),
+  overlaySeedBtn:document.getElementById('overlaySeedBtn'),
+  seedOverlay:document.getElementById('seedOverlay'),
+  seedForm:document.getElementById('seedForm'),
+  seedInput:document.getElementById('seedInput'),
+  seedCancelBtn:document.getElementById('seedCancelBtn')
 };
 
 let puzzle=null;
@@ -404,9 +478,41 @@ let timerStart=0;
 let elapsedBeforeStop=0;
 let timerRAF=null;
 let drag=null;
+let currentSeed='';
 
 const clone=o=>JSON.parse(JSON.stringify(o));
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+
+function randomFromSeed(seed){
+  let state=0;
+
+  for(const char of seed){
+    state=(Math.imul(state,31)+char.charCodeAt(0))>>>0;
+  }
+
+  return ()=>{
+    state=(state+0x6D2B79F5)>>>0;
+    let value=state;
+    value=Math.imul(value^(value>>>15),value|1);
+    value^=value+Math.imul(value^(value>>>7),value|61);
+    return ((value^(value>>>14))>>>0)/4294967296;
+  };
+}
+
+function randomSeed(){
+  return Math.floor(Math.random()*60466176).toString(36);
+}
+
+function updateSeed(seed){
+  currentSeed=seed;
+  els.seedBtn.textContent=`seed ${seed}`;
+  els.seedBtn.setAttribute('aria-label',`Abrir puzzle por seed ${seed}`);
+  els.overlaySeedBtn.textContent=`seed ${seed}`;
+  els.overlaySeedBtn.setAttribute('aria-label',`Abrir puzzle por seed ${seed}`);
+  const url=new URL(window.location.href);
+  url.searchParams.set('seed',seed);
+  history.replaceState(null,'',url);
+}
 
 const resourceMeta={
   money:{emoji:'💰',label:'Caixa'},
@@ -509,9 +615,9 @@ function apply(a,s){
   - exatamente 1 permutação completa precisa funcionar;
   - precisa existir uma rota errada que sobreviva pelo menos 3 passos.
 */
-function makeCandidate(){
-  const startMoney=10+Math.floor(Math.random()*5); // 10..14
-  const woodCost=4+Math.floor(Math.random()*3);    // 4..6
+function makeCandidate(random){
+  const startMoney=10+Math.floor(random()*5); // 10..14
+  const woodCost=4+Math.floor(random()*3);    // 4..6
 
   // Metal é comprável logo no começo, mas caro o suficiente
   // para impedir a compra posterior da madeira se escolhido primeiro.
@@ -520,11 +626,11 @@ function makeCandidate(){
   // Após a venda básica, precisa voltar a ser possível comprar metal.
   const basicSale=
     Math.max(
-      8+Math.floor(Math.random()*5),
+       8+Math.floor(random()*5),
       metalCost-(startMoney-woodCost)+1
     );
 
-  const premiumSale=18+Math.floor(Math.random()*9);
+  const premiumSale=18+Math.floor(random()*9);
 
   const actions=[
     {
@@ -659,9 +765,9 @@ function analyzePuzzle(p){
   };
 }
 
-function generatePuzzle(){
+function generatePuzzle(random){
   for(let i=0;i<30;i++){
-    const p=makeCandidate();
+    const p=makeCandidate(random);
     const info=analyzePuzzle(p);
 
     if(
@@ -677,20 +783,14 @@ function generatePuzzle(){
     }
   }
 
-  // Estrutura é desenhada para passar sempre; isto é só fallback.
-  const p=makeCandidate();
-  const info=analyzePuzzle(p);
-  p.solution=info.solutions[0]?.order || p.actions.map(a=>a.id);
-  p.finalMoney=info.solutions[0]?.finalMoney || p.start.money;
-  p.analysis=info;
-  return p;
+  return null;
 }
 
-function shuffle(arr){
+function shuffle(arr,random){
   const x=arr.slice();
 
   for(let i=x.length-1;i>0;i--){
-    const j=Math.floor(Math.random()*(i+1));
+    const j=Math.floor(random()*(i+1));
     [x[i],x[j]]=[x[j],x[i]];
   }
 
@@ -930,6 +1030,18 @@ function showOverlay(){
   els.overlay.classList.remove('hidden');
 }
 
+function showSeedDialog(){
+  if(playing || drag) return;
+  els.seedInput.value=currentSeed;
+  els.seedOverlay.classList.remove('hidden');
+  els.seedInput.focus();
+  els.seedInput.select();
+}
+
+function hideSeedDialog(){
+  els.seedOverlay.classList.add('hidden');
+}
+
 function hideOverlay(){
   els.overlay.classList.add('hidden');
 }
@@ -963,15 +1075,20 @@ function resetSamePuzzle(){
   els.execute.disabled=false;
 }
 
-function newPuzzle(){
+function loadPuzzle(seed){
   if(playing || drag) return;
 
-  puzzle=generatePuzzle();
+  const random=randomFromSeed(seed);
+  const nextPuzzle=generatePuzzle(random);
 
-  let shuffled=shuffle(puzzle.actions.map(a=>a.id));
+  if(!nextPuzzle) return false;
+
+  puzzle=nextPuzzle;
+
+  let shuffled=shuffle(puzzle.actions.map(a=>a.id),random);
 
   while(shuffled.join('|')===puzzle.solution.join('|')){
-    shuffled=shuffle(puzzle.actions.map(a=>a.id));
+    shuffled=shuffle(puzzle.actions.map(a=>a.id),random);
   }
 
   initialOrder=shuffled.slice();
@@ -987,14 +1104,47 @@ function newPuzzle(){
   showOverlay();
 
   els.execute.disabled=false;
+  updateSeed(seed);
+  return true;
+}
+
+function newPuzzle(){
+  if(playing || drag) return;
+
+  let seed;
+
+  do{
+    seed=randomSeed();
+  }while(!loadPuzzle(seed));
+}
+
+function openSeed(e){
+  e.preventDefault();
+  const seed=els.seedInput.value.trim().toLowerCase();
+
+  if(!/^[0-9a-z]{1,5}$/.test(seed)){
+    els.seedInput.setCustomValidity('Use de 1 a 5 números ou letras minúsculas.');
+    els.seedInput.reportValidity();
+    return;
+  }
+
+  els.seedInput.setCustomValidity('');
+  if(loadPuzzle(seed)) hideSeedDialog();
 }
 
 els.startBtn.addEventListener('click',startChallenge);
 els.execute.addEventListener('click',executeOrder);
 els.reset.addEventListener('click',resetSamePuzzle);
 els.newBtn.addEventListener('click',newPuzzle);
+els.seedBtn.addEventListener('click',showSeedDialog);
+els.overlaySeedBtn.addEventListener('click',showSeedDialog);
+els.seedCancelBtn.addEventListener('click',hideSeedDialog);
+els.seedForm.addEventListener('submit',openSeed);
 
-newPuzzle();
+const requestedSeed=new URLSearchParams(window.location.search).get('seed');
+if(!requestedSeed || !/^[0-9a-z]{1,5}$/.test(requestedSeed) || !loadPuzzle(requestedSeed)){
+  newPuzzle();
+}
 </script>
 </body>
 </html>

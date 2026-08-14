@@ -132,6 +132,10 @@ Idealmente uso seeds para conseguir reproduzir exatamente uma sessão. Posso reg
 
 Um benchmark só é útil para comparação se a diferença no resultado vier principalmente da pessoa, e não de uma diferença aleatória enorme entre as provas.
 
+## Seeds devem ser compartilháveis
+
+Quando o benchmark gera fases procedurais, a seed deve determinar toda a instância apresentada, inclusive a ordem inicial. A interface deve exibir sempre a seed atual e refletir o código na URL para que a mesma fase possa ser aberta por link ou por código curto. Só devem ser exibidas seeds que passaram pelas validações do gerador.
+
 ## Repetição revela mais do que uma tentativa
 
 Não devo concluir que alguém é ótimo ou ruim com base em um único puzzle.

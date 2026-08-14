@@ -100,6 +100,10 @@ Depois disso, o overlay inicial volta a aparecer.
 
 **Reiniciar** repete exatamente o mesmo teste. **Novo** gera outra instância procedural. Os dois controles devem ser visualmente e conceitualmente distintos.
 
+## Seed visível e acessível
+
+Quando houver seed, o código atual deve permanecer visível sem esconder informações do puzzle. Abrir uma seed deve ser possível por um controle direto, com entrada curta e validação clara; a URL deve permitir compartilhar a mesma instância sem exigir navegação adicional.
+
 ## Erro não deve destruir o trabalho do usuário
 
 Se a pessoa ordenou oito cards e a sequência falhou, a cadeia deve permanecer como estava. O usuário deve poder identificar, mover e corrigir os elementos sem reconstruir tudo do zero, a menos que apagar tudo seja deliberadamente parte da habilidade testada.
