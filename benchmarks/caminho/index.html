@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Caminho programado</title>
+  <style>
+    :root{color-scheme:light;--bg:#f1efe9;--paper:#fbfaf6;--ink:#202b2d;--muted:#687476;--line:#c9ceca;--road:#d9ad52;--road-line:#fff4ca;--purple:#7653a6;--purple-dark:#583b83;--green:#247b62;--bad:#b5433c;--ok:#167052}*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{width:100%;height:100%;margin:0;overflow:hidden;overscroll-behavior:none}body{min-height:100dvh;background:var(--bg);color:var(--ink);font:15px/1.25 system-ui,-apple-system,"Segoe UI",sans-serif;touch-action:manipulation}.app{width:100vw;height:100dvh;display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:7px;padding:max(7px,env(safe-area-inset-top)) max(7px,env(safe-area-inset-right)) max(7px,env(safe-area-inset-bottom)) max(7px,env(safe-area-inset-left))}.top{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:8px;min-height:38px}.title{min-width:0}.eyebrow{color:var(--muted);font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}h1{margin:1px 0 0;font-size:18px;line-height:1;letter-spacing:-.03em}.timer,.attempts{font-variant-numeric:tabular-nums;white-space:nowrap}.timer{font-size:19px;font-weight:900;color:var(--green)}.attempts{color:var(--muted);font-size:11px}.game{min-height:0;display:grid;grid-template-rows:minmax(220px,46%) minmax(0,1fr);gap:7px}.board{position:relative;min-height:0;overflow:hidden;border:1px solid var(--line);border-radius:13px;background:var(--paper)}#maze{display:block;width:100%;height:100%}.road{stroke:var(--road);stroke-width:12;stroke-linecap:round}.road-mark{stroke:var(--road-line);stroke-width:1.6;stroke-linecap:round;stroke-dasharray:3 5}.node{fill:var(--road)}.pin-shadow{fill:#000;opacity:.16}.pin-body{fill:#e75245;stroke:#263336;stroke-width:1.4}.pin-hole{fill:#fff}.character{position:absolute;width:32px;height:32px;transform:translate(-50%,-50%) rotate(0deg);transform-origin:center;will-change:left,top,transform;z-index:3}.character svg{display:block;width:100%;height:100%;filter:drop-shadow(1px 3px 1px rgba(0,0,0,.22))}.character.shake{animation:shake .22s linear 2}.workspace{min-height:0;display:grid;grid-template-rows:auto auto minmax(0,1fr) auto;gap:6px;padding:9px 10px;border:1px solid var(--line);border-radius:13px;background:var(--paper)}.workspace-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px}.workspace-head strong{font-size:14px}.budget{color:var(--purple-dark);font-weight:900;font-variant-numeric:tabular-nums}.palette{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.command,.program-block{min-height:44px;border:0;border-radius:9px;color:#fff;font:800 13px/1 system-ui,-apple-system,"Segoe UI",sans-serif;cursor:pointer}.command{background:var(--purple)}.command:active{background:var(--purple-dark)}.command:disabled{opacity:.38}.command-icon{display:block;font-size:19px;line-height:16px}.program{min-height:0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));align-content:start;gap:5px;overflow:hidden}.slot{position:relative;height:42px;border:1px dashed #c3bacf;border-radius:8px;background:#f4f0f7}.slot::before{content:attr(data-number);position:absolute;top:3px;left:4px;color:#a59eaa;font-size:9px}.program-block{position:absolute;inset:0;min-height:0;padding:4px 2px;background:var(--purple);font-size:11px}.program-block.active{outline:3px solid #e0c7ff;outline-offset:-3px}.program-block small{display:block;margin-top:2px;font-size:9px;font-weight:650;opacity:.82}.feedback{min-height:34px;display:flex;align-items:center;color:var(--muted);font-size:12px}.feedback.ok{color:var(--ok);font-weight:800}.feedback.bad{color:var(--bad);font-weight:800}.controls{display:grid;grid-template-columns:1.35fr 1fr 1fr;gap:6px}.controls button,.overlay button{min-height:46px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);font:800 13px/1 system-ui,-apple-system,"Segoe UI",sans-serif}.controls .execute{border-color:var(--green);background:var(--green);color:#fff}.controls button:disabled{opacity:.42}.seed-button{padding:0;border:0;background:none;color:var(--green);font:inherit;text-decoration:underline}.overlay{position:fixed;inset:0;z-index:10;display:grid;place-items:center;padding:22px;background:var(--bg)}.overlay[hidden]{display:none}.modal{width:min(350px,100%);text-align:center}.modal .play{width:100%;min-height:58px;border-color:var(--green);background:var(--green);color:#fff;font-size:18px}.modal h2{margin:0 0 7px;font-size:25px;letter-spacing:-.04em}.modal p{margin:0 0 18px;color:var(--muted)}.modal .seed-open{margin-top:9px;width:100%;background:transparent}@keyframes shake{25%{margin-left:-5px}75%{margin-left:5px}}@media (prefers-reduced-motion:reduce){.character.shake{animation:none}}@media (min-width:760px){.app{max-width:1180px;margin:auto}.game{grid-template-columns:minmax(0,1.25fr) minmax(330px,.75fr);grid-template-rows:minmax(0,1fr)}.board{border-radius:15px}.workspace{padding:16px}.program{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.slot{height:48px}.controls{width:min(500px,43%);justify-self:end}.title h1{font-size:22px}}@media (max-height:650px) and (max-width:759px){.app{gap:4px;padding-top:4px;padding-bottom:4px}.top{min-height:32px}h1{font-size:15px}.game{grid-template-rows:minmax(190px,42%) minmax(0,1fr);gap:4px}.workspace{padding:6px 8px;gap:4px}.command{min-height:38px}.slot{height:34px}.controls button{min-height:40px}}
+  </style>
+  <style>
+    .workspace{grid-template-rows:auto minmax(0,1fr) auto;padding:0;gap:0;overflow:hidden}.workspace-head{padding:8px 10px;border-bottom:1px solid var(--line)}.blockly-editor{width:100%;height:100%;min-height:0;background:#fff}.blockly-editor.locked{pointer-events:none}.feedback{padding:5px 10px;border-top:1px solid var(--line)}.blocklyFlyoutBackground{fill:#e3e3e3!important;fill-opacity:1!important}.blocklyMainBackground{fill:#fff!important;stroke:none!important}.blocklyScrollbarHandle{fill:#9da4aa!important}.blocklyToolboxDiv{background:#e3e3e3!important}.blocklyFlyoutLabelText{fill:#343a3c!important}.blocklyWidgetDiv .goog-menuitem{font:14px system-ui,-apple-system,"Segoe UI",sans-serif}.blocklyText{font-family:system-ui,-apple-system,"Segoe UI",sans-serif!important}.blocklySelected>.blocklyPath{stroke:#f0cf5b!important;stroke-width:3px!important}@media(max-width:759px){.workspace-head{padding:5px 8px}.feedback{min-height:28px;padding:4px 8px}.blocklyFlyout{max-width:46%}}@media(min-width:760px){.workspace{padding:0}.workspace-head{padding:10px 16px}.feedback{padding:8px 16px}}
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="top">
+      <div class="title"><div class="eyebrow">Planejamento · seed <button id="seed-button" class="seed-button" type="button"><span id="seed"></span></button></div><h1>Caminho programado</h1></div>
+      <div id="attempts" class="attempts">0 tentativas</div>
+      <div id="timer" class="timer" aria-label="Tempo">00:00</div>
+    </header>
+    <section class="game">
+      <div id="board" class="board" aria-label="Labirinto com personagem e chegada">
+        <svg id="maze" viewBox="0 0 100 100" role="img" aria-label="Mapa do caminho"></svg>
+        <div id="character" class="character" data-testid="character" aria-label="Personagem">
+          <svg viewBox="-18 -18 36 36" aria-hidden="true"><circle r="12" fill="#286c68" stroke="#193d3b" stroke-width="2"/><path d="M2-10 16 0 2 10Z" fill="#f4d36d" stroke="#193d3b" stroke-width="1.5"/><circle cx="-3" cy="-4" r="2" fill="#fff"/></svg>
+        </div>
+      </div>
+      <section class="workspace" aria-label="Programa">
+        <div class="workspace-head"><strong>Monte o programa</strong><span id="budget" class="budget" data-testid="budget">0/0 blocos</span></div>
+        <div id="blockly-editor" class="blockly-editor" data-testid="program" aria-label="Editor de blocos"></div>
+        <div id="feedback" class="feedback" data-testid="feedback" aria-live="polite">Use exatamente todos os blocos.</div>
+      </section>
+    </section>
+    <nav class="controls" aria-label="Controles">
+      <button id="execute-button" class="execute" data-testid="execute-button" type="button" disabled>▶ Executar</button>
+      <button id="reset-button" data-testid="reset-button" type="button">Reiniciar</button>
+      <button id="new-button" data-testid="new-button" type="button">Novo</button>
+    </nav>
+  </main>
+  <div id="overlay" class="overlay">
+    <div class="modal">
+      <h2>Chegue ao pino</h2>
+      <p>Monte a rota usando exatamente o número de blocos disponível.</p>
+      <button id="start-button" class="play" data-testid="start-button" type="button">▶ Iniciar</button>
+      <button class="tutorial-launch" data-tutorial-button data-testid="tutorial-button" type="button">Tutorial</button>
+      <button id="overlay-seed-button" class="seed-open" data-testid="overlay-seed-button" type="button">Abrir seed</button>
+    </div>
+  </div>
+  <script src="../../node_modules/blockly/blockly_compressed.js"></script>
+  <script src="../../node_modules/blockly/blocks_compressed.js"></script>
+  <script src="../../node_modules/blockly/msg/pt-br.js"></script>
+  <script>
+    (() => {
+      const $ = id => document.getElementById(id);
+      const directions = [[-1,0],[0,1],[1,0],[0,-1]];
+      const parseSeed = () => {
+        const raw = new URLSearchParams(location.search).get('seed');
+        return /^\d{1,10}$/.test(raw || '') ? Number(raw) >>> 0 : Math.floor(Math.random() * 0xffffffff);
+      };
+      let seed = parseSeed(), puzzle, attempts = 0, running = false, executing = false, startedAt = 0, timerId = 0, blocklyWorkspace;
+
+      Blockly.defineBlocksWithJsonArray([
+        {type:'move_forward',message0:'avançar',previousStatement:null,nextStatement:null,colour:285,tooltip:'Avança uma casa na direção atual.'},
+        {type:'turn_left',message0:'vire à esquerda ↶',previousStatement:null,nextStatement:null,colour:285,tooltip:'Gira 90 graus para a esquerda.'},
+        {type:'turn_right',message0:'vire à direita ↷',previousStatement:null,nextStatement:null,colour:285,tooltip:'Gira 90 graus para a direita.'},
+        {type:'repeat_until_goal',message0:'repetir até 📍',message1:'faça %1',args1:[{type:'input_statement',name:'DO'}],previousStatement:null,nextStatement:null,colour:125,tooltip:'Repete os blocos internos até chegar ao pino.'},
+        {type:'if_path',message0:'se caminho à %1',args0:[{type:'field_dropdown',name:'DIRECTION',options:[['frente','FRONT'],['esquerda','LEFT'],['direita','RIGHT']]}],message1:'faça %1',args1:[{type:'input_statement',name:'DO'}],previousStatement:null,nextStatement:null,colour:210,tooltip:'Executa os blocos internos se houver caminho.'},
+        {type:'if_else_path',message0:'se caminho à %1',args0:[{type:'field_dropdown',name:'DIRECTION',options:[['frente','FRONT'],['esquerda','LEFT'],['direita','RIGHT']]}],message1:'faça %1',args1:[{type:'input_statement',name:'DO'}],message2:'senão %1',args2:[{type:'input_statement',name:'ELSE'}],previousStatement:null,nextStatement:null,colour:210,tooltip:'Escolhe entre dois grupos conforme o caminho.'}
+      ]);
+      const blockTheme=Blockly.Theme.defineTheme('caminho',{base:Blockly.Themes.Classic,componentStyles:{workspaceBackgroundColour:'#ffffff',toolboxBackgroundColour:'#e3e3e3',flyoutBackgroundColour:'#e3e3e3',flyoutForegroundColour:'#202b2d',flyoutOpacity:1,scrollbarColour:'#9da4aa',scrollbarOpacity:.55,insertionMarkerColour:'#f0cf5b',insertionMarkerOpacity:.8}});
+      const toolbox={kind:'flyoutToolbox',contents:[
+        {kind:'block',type:'move_forward'},
+        {kind:'block',type:'turn_left'},
+        {kind:'block',type:'turn_right'},
+        {kind:'block',type:'repeat_until_goal'},
+        {kind:'block',type:'if_path'},
+        {kind:'block',type:'if_else_path'}
+      ]};
+
+      function rngFor(value) {
+        let state = value || 0x9e3779b9;
+        return () => { state = (state * 1664525 + 1013904223) >>> 0; return state / 0x100000000; };
+      }
+      const key = ([row,col]) => `${row},${col}`;
+      const edgeKey = (a,b) => [key(a),key(b)].sort().join('|');
+      function makeTree(random) {
+        const edges = new Set(), seen = new Set(['0,0']), stack = [[0,0]];
+        while (stack.length) {
+          const current = stack.at(-1);
+          const candidates = directions.map(([dr,dc]) => [current[0]+dr,current[1]+dc]).filter(([r,c]) => r>=0&&r<5&&c>=0&&c<5&&!seen.has(`${r},${c}`));
+          if (!candidates.length) { stack.pop(); continue; }
+          const next = candidates[Math.floor(random()*candidates.length)];
+          edges.add(edgeKey(current,next)); seen.add(key(next)); stack.push(next);
+        }
+        return edges;
+      }
+      function neighbors(cell, edges) {
+        return directions.map(([dr,dc]) => [cell[0]+dr,cell[1]+dc]).filter(next => edges.has(edgeKey(cell,next)));
+      }
+      function findPath(start, goal, edges) {
+        const queue = [start], previous = new Map([[key(start),null]]);
+        for (let i=0;i<queue.length;i++) {
+          const cell = queue[i];
+          if (key(cell) === key(goal)) break;
+          for (const next of neighbors(cell,edges)) if (!previous.has(key(next))) { previous.set(key(next),cell); queue.push(next); }
+        }
+        const path = []; let cursor = goal;
+        while (cursor) { path.unshift(cursor); cursor = previous.get(key(cursor)); }
+        return path;
+      }
+      function directionBetween(a,b) { return directions.findIndex(([dr,dc]) => a[0]+dr===b[0]&&a[1]+dc===b[1]); }
+      function commandsFor(path, heading) {
+        const commands = []; let direction = heading, turns = 0;
+        for (let i=1;i<path.length;i++) {
+          const target = directionBetween(path[i-1],path[i]);
+          const delta = (target-direction+4)%4;
+          if (delta===1) { commands.push('right'); turns++; }
+          else if (delta===3) { commands.push('left'); turns++; }
+          else if (delta===2) { commands.push('right','right'); turns+=2; }
+          commands.push('forward'); direction=target;
+        }
+        return {commands,turns};
+      }
+      function generate(value) {
+        const random = rngFor(value);
+        for (let treeAttempt=0;treeAttempt<30;treeAttempt++) {
+          const edges = makeTree(random), candidates=[];
+          for (let a=0;a<25;a++) for (let b=0;b<25;b++) if (a!==b) {
+            const start=[Math.floor(a/5),a%5], goal=[Math.floor(b/5),b%5], path=findPath(start,goal,edges);
+            if (path.length<6||path.length>8) continue;
+            for (let heading=0;heading<4;heading++) {
+              const solution=commandsFor(path,heading);
+              if (solution.commands.length>=8&&solution.commands.length<=10&&solution.turns>=3) candidates.push({edges,start,goal,path,heading,solution:solution.commands});
+            }
+          }
+          if (candidates.length) return candidates[Math.floor(random()*candidates.length)];
+        }
+        throw new Error('Não foi possível gerar uma fase válida.');
+      }
+      function point([row,col]) { return [10+col*20,10+row*20]; }
+      function renderMaze() {
+        const lines=[];
+        for (const edge of puzzle.edges) {
+          const [a,b]=edge.split('|').map(value=>value.split(',').map(Number));
+          const [x1,y1]=point(a),[x2,y2]=point(b);
+          lines.push(`<line class="road" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" data-edge="${edge}"/>`,`<line class="road-mark" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`);
+        }
+        const [gx,gy]=point(puzzle.goal);
+        $('maze').innerHTML=`<g>${lines.join('')}</g><ellipse class="pin-shadow" cx="${gx+2}" cy="${gy+5}" rx="5" ry="2"/><path class="pin-body" d="M${gx} ${gy+7} C${gx-1} ${gy+2},${gx-6} ${gy-1},${gx-4} ${gy-6} C${gx-2} ${gy-11},${gx+5} ${gy-11},${gx+7} ${gy-6} C${gx+9} ${gy-1},${gx+3} ${gy+3},${gx} ${gy+7}Z"/><circle class="pin-hole" cx="${gx+1.5}" cy="${gy-5}" r="2"/><circle cx="${gx}" cy="${gy}" r="7" fill="transparent" data-testid="goal" data-cell="${key(puzzle.goal)}"><title>Chegada em ${key(puzzle.goal)}</title></circle>`;
+      }
+      function placeCharacter(cell,heading,animate=false) {
+        const [x,y]=point(cell), character=$('character');
+        character.style.transition=animate?'left .32s linear,top .32s linear':'none';
+        character.style.left=`${x}%`; character.style.top=`${y}%`;
+        character.style.transform=`translate(-50%,-50%) rotate(${heading*90-90}deg)`;
+        character.dataset.cell=key(cell); character.dataset.heading=String(heading);
+      }
+      function resetCharacter() { placeCharacter(puzzle.start,puzzle.heading); }
+      function blockCount() { return blocklyWorkspace ? blocklyWorkspace.getAllBlocks(false).length : 0; }
+      function updateProgram() {
+        const count=blockCount(),budget=puzzle.solution.length,connected=blocklyWorkspace&&blocklyWorkspace.getTopBlocks(false).length===1;
+        $('budget').textContent=`${count}/${budget} blocos`;
+        $('execute-button').disabled=!running||executing||count!==budget||!connected;
+        if (!executing&&running) {
+          if (count===budget&&!connected) setFeedback('Conecte todos os blocos em um único programa.');
+          else if (count===budget) setFeedback('Pronto para executar.');
+          else if (count>budget) setFeedback(`Remova ${count-budget} ${count-budget===1?'bloco':'blocos'}.`,'bad');
+          else setFeedback(`Faltam ${budget-count} ${budget-count===1?'bloco':'blocos'}.`);
+        }
+      }
+      function setFeedback(text,type='') { $('feedback').textContent=text; $('feedback').className=`feedback ${type}`; }
+      const wait = milliseconds => new Promise(resolve=>setTimeout(resolve,milliseconds));
+      async function turn(character,from,to) {
+        let start=from*90-90,end=to*90-90;
+        if (end-start>180) end-=360;
+        if (end-start<-180) end+=360;
+        const animation=character.animate([{transform:`translate(-50%,-50%) rotate(${start}deg)`},{transform:`translate(-50%,-50%) rotate(${end}deg)`}],{duration:260,easing:'ease-in-out'});
+        await animation.finished; character.style.transform=`translate(-50%,-50%) rotate(${to*90-90}deg)`;
+      }
+      function pathDirection(state,relative) {
+        const offset={FRONT:0,LEFT:3,RIGHT:1}[relative],heading=(state.heading+offset)%4;
+        const next=[state.cell[0]+directions[heading][0],state.cell[1]+directions[heading][1]];
+        return puzzle.edges.has(edgeKey(state.cell,next));
+      }
+      async function runChain(first,state) {
+        let block=first;
+        while (block&&!state.failed&&key(state.cell)!==key(puzzle.goal)) {
+          if (++state.steps>120) { state.failed='O programa repetiu ações demais.'; break; }
+          blocklyWorkspace.highlightBlock(block.id);
+          if (block.type==='turn_left'||block.type==='turn_right') {
+            const next=(state.heading+(block.type==='turn_left'?3:1))%4;
+            await turn($('character'),state.heading,next); state.heading=next; $('character').dataset.heading=String(next);
+          } else if (block.type==='move_forward') {
+            const next=[state.cell[0]+directions[state.heading][0],state.cell[1]+directions[state.heading][1]];
+            if (!puzzle.edges.has(edgeKey(state.cell,next))) {
+              $('character').classList.add('shake'); await wait(450); $('character').classList.remove('shake'); state.failed='O caminho termina aqui.';
+            } else { state.cell=next; placeCharacter(state.cell,state.heading,true); await wait(340); }
+          } else if (block.type==='repeat_until_goal') {
+            const child=block.getInputTargetBlock('DO');
+            if (!child) state.failed='O bloco repetir está vazio.';
+            while (child&&!state.failed&&key(state.cell)!==key(puzzle.goal)) await runChain(child,state);
+          } else if (block.type==='if_path'||block.type==='if_else_path') {
+            const branch=pathDirection(state,block.getFieldValue('DIRECTION'))?'DO':'ELSE';
+            const child=block.getInputTargetBlock(branch);
+            if (child) await runChain(child,state);
+          }
+          block=block.getNextBlock();
+        }
+      }
+      async function execute() {
+        const count=blockCount(),topBlocks=blocklyWorkspace.getTopBlocks(true);
+        if (executing||count!==puzzle.solution.length||topBlocks.length!==1) return;
+        executing=true; $('blockly-editor').classList.add('locked'); attempts++; $('attempts').textContent=`${attempts} ${attempts===1?'tentativa':'tentativas'}`; updateProgram(); resetCharacter(); await wait(80);
+        const state={cell:puzzle.start.slice(),heading:puzzle.heading,failed:'',steps:0};
+        await runChain(topBlocks[0],state); blocklyWorkspace.highlightBlock(null);
+        const won=!state.failed&&key(state.cell)===key(puzzle.goal);
+        executing=false; $('blockly-editor').classList.remove('locked'); updateProgram();
+        setFeedback(won?`Chegada alcançada em ${attempts} ${attempts===1?'tentativa':'tentativas'}!`:state.failed||'O programa terminou longe do pino.',won?'ok':'bad');
+      }
+      function startTimer() {
+        clearInterval(timerId); startedAt=performance.now();
+        timerId=setInterval(()=>{const seconds=Math.floor((performance.now()-startedAt)/1000);$('timer').textContent=`${String(Math.floor(seconds/60)).padStart(2,'0')}:${String(seconds%60).padStart(2,'0')}`;},200);
+      }
+      function setup() {
+        clearInterval(timerId); running=false; executing=false; attempts=0; puzzle=generate(seed);
+        Blockly.Events.disable(); blocklyWorkspace.clear(); Blockly.Events.enable();
+        $('seed').textContent=seed; $('timer').textContent='00:00'; $('attempts').textContent='0 tentativas'; $('overlay').hidden=false;
+        renderMaze(); resetCharacter(); updateProgram(); setFeedback('Use exatamente todos os blocos.'); Blockly.svgResize(blocklyWorkspace);
+      }
+      function start() { if (running) return; running=true; $('overlay').hidden=true; startTimer(); updateProgram(); Blockly.svgResize(blocklyWorkspace); }
+      function reset() { setup(); }
+      function newPuzzle() { seed=(seed*1664525+1013904223)>>>0; history.replaceState(null,'',`?seed=${seed}`); setup(); }
+      function openSeed() {
+        const value=prompt('Digite uma seed de até 10 números.',seed);
+        if (value===null) return;
+        if (!/^\d{1,10}$/.test(value)) { setFeedback('Seed inválida. Use de 1 a 10 números.','bad'); return; }
+        seed=Number(value)>>>0; history.replaceState(null,'',`?seed=${seed}`); setup();
+      }
+      $('execute-button').addEventListener('click',execute); $('start-button').addEventListener('click',start); $('reset-button').addEventListener('click',reset); $('new-button').addEventListener('click',newPuzzle); $('seed-button').addEventListener('click',openSeed); $('overlay-seed-button').addEventListener('click',openSeed);
+      blocklyWorkspace=Blockly.inject('blockly-editor',{toolbox,theme:blockTheme,renderer:'zelos',trashcan:true,sounds:false,move:{scrollbars:true,drag:true,wheel:true},zoom:{controls:false,wheel:true,startScale:innerWidth<760?.68:.82,maxScale:1.15,minScale:.45,scaleSpeed:1.08}});
+      window.pathWorkspace=blocklyWorkspace;
+      blocklyWorkspace.addChangeListener(event=>{
+        if (event.isUiEvent||executing||!puzzle) return;
+        resetCharacter(); updateProgram();
+      });
+      new ResizeObserver(()=>Blockly.svgResize(blocklyWorkspace)).observe($('blockly-editor'));
+      setup();
+    })();
+  </script>
+  <script src="../../tutorial.js"></script>
+</body>
+</html>

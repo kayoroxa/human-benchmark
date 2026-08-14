@@ -42,6 +42,50 @@ async function expectTutorialHighlightFitsViewport(page) {
   expect(dimensions.bottom).toBeLessThanOrEqual(dimensions.viewportHeight + 4);
 }
 
+async function solvePathPuzzle(page) {
+  const state = await page.evaluate(() => ({
+    start: document.querySelector('[data-testid="character"]').dataset.cell,
+    heading: Number(document.querySelector('[data-testid="character"]').dataset.heading),
+    goal: document.querySelector('[data-testid="goal"]').dataset.cell,
+    edges: [...document.querySelectorAll('[data-edge]')].map(edge => edge.dataset.edge)
+  }));
+  const adjacency = new Map();
+  for (const edge of state.edges) {
+    const [from, to] = edge.split('|');
+    adjacency.set(from, [...(adjacency.get(from) || []), to]);
+    adjacency.set(to, [...(adjacency.get(to) || []), from]);
+  }
+  const queue = [state.start];
+  const previous = new Map([[state.start, null]]);
+  for (let index = 0; index < queue.length; index++) {
+    const cell = queue[index];
+    if (cell === state.goal) break;
+    for (const next of adjacency.get(cell) || []) {
+      if (!previous.has(next)) {
+        previous.set(next, cell);
+        queue.push(next);
+      }
+    }
+  }
+  const path = [];
+  for (let cell = state.goal; cell; cell = previous.get(cell)) path.unshift(cell);
+  const vectors = [[-1, 0], [0, 1], [1, 0], [0, -1]];
+  const commands = [];
+  let heading = state.heading;
+  for (let index = 1; index < path.length; index++) {
+    const [row, column] = path[index - 1].split(',').map(Number);
+    const [nextRow, nextColumn] = path[index].split(',').map(Number);
+    const target = vectors.findIndex(([dr, dc]) => row + dr === nextRow && column + dc === nextColumn);
+    const delta = (target - heading + 4) % 4;
+    if (delta === 1) commands.push('right');
+    if (delta === 3) commands.push('left');
+    if (delta === 2) commands.push('right', 'right');
+    commands.push('forward');
+    heading = target;
+  }
+  return commands;
+}
+
 test('index exposes every implemented benchmark', async ({ page }) => {
   await page.goto('/');
 
@@ -52,7 +96,8 @@ test('index exposes every implemented benchmark', async ({ page }) => {
     'benchmarks/carteira/',
     'benchmarks/regra-oculta/',
     'benchmarks/fluxo/',
-    'benchmarks/memoria-palavras/'
+    'benchmarks/memoria-palavras/',
+    'benchmarks/caminho/'
   ]) {
     await expect(page.locator(`a[href="${href}"]`)).toBeVisible();
   }
@@ -66,7 +111,8 @@ test('every play overlay offers a guided tutorial without starting the session',
     ['/benchmarks/carteira/?seed=10', 5, true],
     ['/benchmarks/regra-oculta/?seed=0', 5, true],
     ['/benchmarks/fluxo/?seed=0', 5, true],
-    ['/benchmarks/memoria-palavras/?seed=1', 5, false]
+    ['/benchmarks/memoria-palavras/?seed=1', 5, false],
+    ['/benchmarks/caminho/?seed=42', 5, true]
   ];
 
   for (const [path, stepCount, hasTimer] of tutorials) {
@@ -225,6 +271,81 @@ test('word-memory benchmark updates score, spends lives, and ends after three er
   await expectPuzzleFitsViewport(page);
 });
 
+test('path benchmark enforces its exact budget and animates a procedural solution', async ({ page }) => {
+  await start(page, '/benchmarks/caminho/?seed=42');
+  const commands = await solvePathPuzzle(page);
+  expect(commands.length).toBeGreaterThanOrEqual(8);
+  const toolbox = page.locator('.blocklyFlyout:not(.blocklyTrashcanFlyout)');
+  await expect(toolbox).toBeVisible();
+  await expect(toolbox).toContainText('repetir até');
+  await expect(toolbox).toContainText('se caminho à');
+  await expect(toolbox).toContainText('senão');
+  await expect(page.getByTestId('execute-button')).toBeDisabled();
+
+  const firstToolboxBlock = page.locator('.blocklyFlyout:not(.blocklyTrashcanFlyout) .blocklyDraggable').first();
+  await firstToolboxBlock.dragTo(page.getByTestId('program'), { targetPosition: { x: 230, y: 60 } });
+  await expect(page.getByTestId('budget')).toHaveText(`1/${commands.length} blocos`);
+
+  await page.evaluate(program => {
+    const workspace = window.pathWorkspace;
+    workspace.clear();
+    const types = { forward: 'move_forward', left: 'turn_left', right: 'turn_right' };
+    let previous = null;
+    for (const command of program) {
+      const block = workspace.newBlock(types[command]);
+      block.initSvg();
+      block.render();
+      if (previous) previous.nextConnection.connect(block.previousConnection);
+      else block.moveBy(70, 30);
+      previous = block;
+    }
+  }, commands.slice(0, -1));
+  await expect(page.getByTestId('budget')).toHaveText(`${commands.length - 1}/${commands.length} blocos`);
+  await expect(page.getByTestId('execute-button')).toBeDisabled();
+
+  await page.evaluate(command => {
+    const workspace = window.pathWorkspace;
+    const types = { forward: 'move_forward', left: 'turn_left', right: 'turn_right' };
+    const previous = workspace.getTopBlocks(false)[0].getDescendants(false).at(-1);
+    const block = workspace.newBlock(types[command]);
+    block.initSvg();
+    block.render();
+    previous.nextConnection.connect(block.previousConnection);
+  }, commands.at(-1));
+  await expect(page.getByTestId('budget')).toHaveText(`${commands.length}/${commands.length} blocos`);
+  await expect(page.getByTestId('execute-button')).toBeEnabled();
+
+  await page.getByTestId('execute-button').click();
+  await expect.poll(() => page.getByTestId('character').evaluate(character => {
+    const animation = character.getAnimations().find(candidate => candidate.playState === 'running');
+    return animation?.effect.getKeyframes().map(frame => frame.transform) || [];
+  })).toHaveLength(2);
+  await expect(page.getByTestId('feedback')).toContainText('Chegada alcançada', { timeout: 10000 });
+  const positions = await page.evaluate(() => ({
+    character: document.querySelector('[data-testid="character"]').dataset.cell,
+    goal: document.querySelector('[data-testid="goal"]').dataset.cell
+  }));
+  expect(positions.character).toBe(positions.goal);
+  await expect(page.locator('#attempts')).toHaveText('1 tentativa');
+  await expectPuzzleFitsViewport(page);
+});
+
+test('path benchmark keeps the same procedural maze after reset', async ({ page }) => {
+  await start(page, '/benchmarks/caminho/?seed=9876');
+  const initial = await page.locator('[data-edge]').evaluateAll(edges => edges.map(edge => edge.dataset.edge));
+  await page.evaluate(() => {
+    const block = window.pathWorkspace.newBlock('move_forward');
+    block.initSvg();
+    block.render();
+  });
+  await page.getByTestId('reset-button').click();
+
+  await expect(page.locator('#overlay')).toBeVisible();
+  await expect(page.getByTestId('budget')).toHaveText(/^0\/\d+ blocos$/);
+  const reset = await page.locator('[data-edge]').evaluateAll(edges => edges.map(edge => edge.dataset.edge));
+  expect(reset).toEqual(initial);
+});
+
 test('new benchmark workspaces remain bounded on desktop', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 720 });
 
@@ -234,7 +355,8 @@ test('new benchmark workspaces remain bounded on desktop', async ({ page }) => {
     '/benchmarks/carteira/?seed=10',
     '/benchmarks/regra-oculta/?seed=0',
     '/benchmarks/fluxo/?seed=0',
-    '/benchmarks/memoria-palavras/?seed=0'
+    '/benchmarks/memoria-palavras/?seed=0',
+    '/benchmarks/caminho/?seed=42'
   ]) {
     await start(page, path);
     await expectPuzzleFitsViewport(page);

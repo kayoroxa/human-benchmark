@@ -71,6 +71,16 @@
         { target: '#feedback', title: 'Resposta imediata', text: 'Depois de cada toque, o painel informa se voce acertou e a proxima palavra aparece. Use esse retorno para continuar acompanhando quais palavras ja entraram na sessao.', example: 'Uma resposta errada nao transforma uma palavra antiga em nova.' },
         { target: '#lives', title: 'Score e vidas', text: 'Cada acerto soma um ponto e cada erro remove uma das tres vidas. A sessao continua sem limite de tempo e termina quando as tres vidas forem perdidas.', example: 'Priorize a memoria correta; nao existe bonus por responder rapidamente.' }
       ]
+    },
+    caminho: {
+      title: 'Tutorial do caminho',
+      steps: [
+        { target: '#board', title: 'Qual e o objetivo?', text: 'Leve o personagem ate o pino vermelho seguindo somente as estradas. O personagem comeca apontando para uma direcao especifica e nao atravessa espacos fora do caminho.', example: 'O pino marca apenas a chegada; voce precisa decidir cada giro e cada avanco desde a posicao inicial.' },
+        { target: '.blocklyFlyout', title: 'Escolha os comandos', text: 'Avancar move uma casa na direcao atual. Os giros mudam a direcao; repeticao e condicoes permitem montar uma estrategia que reage ao caminho.', example: 'Para entrar numa estrada a direita: encaixe Direita e depois Avancar.' },
+        { target: '#blockly-editor', title: 'Monte na ordem', text: 'Arraste os blocos da faixa cinza para a area branca e encaixe as pecas. Blocos dentro de faca pertencem ao comando de repeticao ou decisao que os envolve.', example: 'A execucao comeca no bloco mais alto e segue cada encaixe de cima para baixo.' },
+        { target: '#budget', title: 'Use o limite exato', text: 'A fase exige exatamente a quantidade mostrada de blocos. O botao Executar so fica disponivel quando todos os espacos estiverem preenchidos.', example: 'Se aparece 7/9 blocos, ainda faltam exatamente dois comandos.' },
+        { target: '#execute-button', title: 'Execute e observe', text: 'O personagem gira primeiro e depois se desloca quando recebe Avancar. Se a rota falhar, seu programa permanece montado para que voce ajuste somente os blocos necessarios.', example: 'Reiniciar repete esta seed; Novo gera outro labirinto procedural.' }
+      ]
     }
   };
 
