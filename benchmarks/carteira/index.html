@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Carteira de decisões</title>
+  <style>
+    :root{color-scheme:light;--ink:#17202a;--paper:#f4f1ea;--panel:#fff;--line:#d9d4c9;--muted:#65706b;--accent:#b1492e;--soft:#fff4ed;--ok:#285a48}*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;overscroll-behavior:none}body{width:100vw;height:100dvh;background:var(--paper);color:var(--ink);font:15px/1.3 system-ui,-apple-system,"Segoe UI",sans-serif;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}main{height:100%;max-width:720px;margin:auto;padding:12px;display:flex;flex-direction:column;gap:9px}.top{display:flex;align-items:start;justify-content:space-between;gap:12px}.eyebrow{font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}.seed-control{min-height:0;padding:0;border:0;background:transparent;color:var(--accent);font:inherit;text-decoration:underline;cursor:pointer}.overlay .seed-control{margin-top:8px;min-height:44px;padding:8px 14px;border:1px solid #d9d4c9;border-radius:10px;background:#fff;color:#853923;font-size:14px}h1{margin:2px 0 0;font-size:clamp(22px,7vw,32px);letter-spacing:-.04em}.timer{font-size:25px;font-weight:850;font-variant-numeric:tabular-nums;color:var(--accent);white-space:nowrap}.score{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}.stat{border:1px solid var(--line);border-radius:9px;background:var(--panel);padding:7px;text-align:center}.stat span{display:block;color:var(--muted);font-size:10px}.stat strong{display:block;margin-top:2px;font-size:17px;font-variant-numeric:tabular-nums}.instruction{margin:0;color:var(--muted);font-size:13px}.options{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.option{min-width:0;min-height:152px;border:2px solid var(--line);border-radius:12px;background:var(--panel);padding:9px;text-align:left;color:var(--ink);font:inherit;cursor:pointer;touch-action:manipulation}.option strong{display:block;margin-bottom:7px;font-size:14px}.option span{display:block;margin-top:3px;font-size:11px}.option[aria-pressed="true"]{border-color:var(--accent);background:var(--soft);box-shadow:0 0 0 2px #b1492e28}.feedback{min-height:36px;display:flex;align-items:center;justify-content:center;padding:6px 8px;border:1px solid var(--line);border-radius:9px;background:#fffaf5;text-align:center;color:var(--muted);font-size:12px}.controls{display:grid;grid-template-columns:1.35fr 1fr 1fr;gap:7px;margin-top:auto}.controls button{min-height:46px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink);font:750 14px/1 system-ui,-apple-system,"Segoe UI",sans-serif;cursor:pointer;touch-action:manipulation}.controls .primary{background:var(--accent);border-color:var(--accent);color:#fff}.controls button:disabled{opacity:.45;cursor:not-allowed}.controls button:hover,.controls button:focus-visible,.option:focus-visible{outline:2px solid #b1492e40;outline-offset:1px;border-color:var(--accent)}.result{min-height:60px;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--ok);font-size:14px}.hidden{display:none!important}.overlay{position:fixed;inset:0;z-index:3;display:grid;place-items:center;padding:24px;background:#17202af0;color:#fff}.overlay[hidden]{display:none}.modal{width:min(350px,100%);text-align:center}.modal h2{margin:0 0 8px;font-size:29px}.modal p{margin:0 0 22px;color:#e0e6e1}.modal button{width:100%;min-height:62px;border:0;border-radius:12px;background:#fff4ed;color:#853923;font:850 19px/1 system-ui;cursor:pointer}@media(max-height:650px){main{padding:8px;gap:6px}.option{min-height:125px;padding:7px}.option span{font-size:10px}.controls button{min-height:40px}}
+  </style>
+</head>
+<body>
+  <main>
+    <header class="top"><div><div class="eyebrow">Raciocínio probabilístico · seed <span id="seed"></span> · <button id="seed-button" data-testid="seed-button" class="seed-control" type="button">abrir</button></div><h1>Carteira de decisões</h1></div><div id="timer" class="timer" aria-label="Tempo">00:00</div></header>
+    <section class="score" aria-label="Métricas da sessão"><div class="stat"><span>Rodada</span><strong id="round">1/7</strong></div><div class="stat"><span>Resultado real</span><strong id="points">0</strong></div><div class="stat"><span>Qualidade EV</span><strong id="quality">0.0</strong></div></section>
+    <p id="prompt" class="instruction">Escolha a opção com maior valor esperado.</p>
+    <section id="options" class="options" aria-label="Opções de investimento"></section>
+    <section id="feedback" class="feedback" aria-live="polite">Selecione uma opção e confirme.</section>
+    <section id="result" data-testid="result" class="result hidden" aria-live="polite"></section>
+    <nav class="controls" aria-label="Controles"><button id="confirm-button" data-testid="confirm-button" class="primary" type="button" disabled>Confirmar escolha</button><button id="reset-button" data-testid="reset-button" type="button">Reiniciar</button><button id="new-button" data-testid="new-button" type="button">Novo</button></nav>
+  </main>
+  <div id="overlay" class="overlay"><div class="modal"><h2>Carteira de decisões</h2><p>Calcule e compare chance, ganho e perda em sete rodadas.</p><button id="start-button" data-testid="start-button" type="button">Iniciar</button><button class="tutorial-launch" data-tutorial-button data-testid="tutorial-button" type="button">Tutorial</button><button id="overlay-seed-button" data-testid="overlay-seed-button" class="seed-control" type="button">Abrir seed</button></div></div>
+  <script>
+    (() => {
+      const $ = id => document.getElementById(id);
+      const labels = ['Opção A','Opção B','Opção C'];
+      const querySeed = Number.parseInt(new URLSearchParams(location.search).get('seed'), 10);
+      let seed = Number.isFinite(querySeed) ? querySeed >>> 0 : Math.floor(Math.random() * 0xffffffff);
+      let rounds = [], index = 0, selected = -1, points = 0, chosenEV = 0, maxEV = 0, running = false, finished = false, startedAt = 0, timerId = 0;
+      function randomGenerator(value) { let state = value >>> 0; return () => { state = (state * 1664525 + 1013904223) >>> 0; return state / 4294967296; }; }
+      const format = ms => { const seconds = Math.floor(ms / 1000); return `${String(Math.floor(seconds / 60)).padStart(2,'0')}:${String(seconds % 60).padStart(2,'0')}`; };
+      function buildRounds() {
+        const random = randomGenerator(seed); const targets = [7,9,11];
+        return Array.from({ length:7 }, (_, roundIndex) => {
+          const offset = Math.floor(random() * 3);
+          const options = targets.map((target, i) => {
+            const probability = 25 + Math.floor(random() * 6) * 10;
+            const loss = -(3 + Math.floor(random() * 10));
+            const win = Math.round((target - (1 - probability / 100) * loss) / (probability / 100));
+            return { probability, win, loss, ev:(probability * win + (100 - probability) * loss) / 100 };
+          });
+          const rotated = options.map((_, i) => options[(i + offset) % options.length]);
+          const outcomeRandom = randomGenerator((seed + roundIndex * 7919) >>> 0);
+          return { options:rotated, outcomes:rotated.map(() => outcomeRandom()) };
+        });
+      }
+      function renderStats() { $('round').textContent = `${Math.min(index + 1, rounds.length)}/${rounds.length}`; $('points').textContent = points; $('quality').textContent = maxEV ? `${chosenEV.toFixed(1)}/${maxEV.toFixed(1)}` : '0.0'; }
+      function renderRound() {
+        const current = rounds[index]; selected = -1; $('confirm-button').disabled = true;
+        $('options').innerHTML = current.options.map((option, optionIndex) => `<button id="option-${optionIndex}" data-testid="option-${optionIndex}" class="option" type="button" aria-pressed="false"><strong>${labels[optionIndex]}</strong><span>Sucesso: ${option.probability}%</span><span>Se sucesso: +${option.win}</span><span>Se falha: ${option.loss}</span></button>`).join('');
+        current.options.forEach((_, optionIndex) => $(`option-${optionIndex}`).addEventListener('click', () => { if (!running || finished) return; selected = optionIndex; document.querySelectorAll('.option').forEach((option, i) => option.setAttribute('aria-pressed', String(i === selected))); $('confirm-button').disabled = false; }));
+        $('prompt').textContent = `Rodada ${index + 1}: escolha a maior expectativa.`; renderStats();
+      }
+      function finish() { finished = true; running = false; clearInterval(timerId); $('options').classList.add('hidden'); $('prompt').classList.add('hidden'); $('feedback').classList.add('hidden'); $('confirm-button').disabled = true; $('result').classList.remove('hidden'); $('result').innerHTML = `<strong>Resultado concluído</strong><br>Resultado real: ${points} · Valor esperado escolhido: ${chosenEV.toFixed(1)} de ${maxEV.toFixed(1)} · Tempo: ${$('timer').textContent}`; }
+      function confirm() {
+        if (!running || selected < 0 || finished) return;
+        const current = rounds[index]; const option = current.options[selected]; const best = Math.max(...current.options.map(value => value.ev)); const realized = current.outcomes[selected] < option.probability / 100 ? option.win : option.loss;
+        points += realized; chosenEV += option.ev; maxEV += best; $('feedback').textContent = `${labels[selected]}: ${realized >= 0 ? '+' : ''}${realized} realizado · EV ${option.ev.toFixed(1)} de ${best.toFixed(1)}.`; index++;
+        if (index === rounds.length) { renderStats(); finish(); } else renderRound();
+      }
+      function reset() { clearInterval(timerId); rounds = buildRounds(); index = 0; selected = -1; points = 0; chosenEV = 0; maxEV = 0; running = false; finished = false; $('seed').textContent = seed.toString(36); $('timer').textContent = '00:00'; $('options').classList.remove('hidden'); $('prompt').classList.remove('hidden'); $('feedback').classList.remove('hidden'); $('result').classList.add('hidden'); $('feedback').textContent = 'Selecione uma opção e confirme.'; $('overlay').hidden = false; renderRound(); }
+      function start() { if (running) return; running = true; startedAt = performance.now(); $('overlay').hidden = true; timerId = setInterval(() => { $('timer').textContent = format(performance.now() - startedAt); }, 250); }
+      function openSeed() { const value=window.prompt('Digite uma seed de até 10 números.',seed); if(value===null)return; if(!/^\d{1,10}$/.test(value)){ $('feedback').textContent='Seed inválida. Use de 1 a 10 números.'; return; } seed=Number(value) >>> 0; history.replaceState(null, '', `?seed=${seed}`); reset(); }
+      function newPuzzle() { seed = (seed * 1664525 + 1013904223) >>> 0; history.replaceState(null, '', `?seed=${seed}`); reset(); }
+      $('start-button').addEventListener('click', start); $('confirm-button').addEventListener('click', confirm); $('seed-button').addEventListener('click', openSeed); $('overlay-seed-button').addEventListener('click', openSeed); $('reset-button').addEventListener('click', reset); $('new-button').addEventListener('click', newPuzzle); reset();
+    })();
+  </script>
+  <script src="../../tutorial.js"></script>
+</body>
+</html>

@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Painel de diagnóstico</title>
+  <style>
+    :root{color-scheme:dark;--bg:#10151b;--panel:#19222b;--line:#334250;--text:#f3f6f8;--muted:#9eabb5;--accent:#7dd3b0;--bad:#f39a8d;--good:#8ee0ad}
+    *{box-sizing:border-box}html,body{width:100%;height:100%;margin:0;overflow:hidden}body{background:radial-gradient(circle at 85% 0,#24343b 0,#10151b 42%);color:var(--text);font:15px/1.25 system-ui,-apple-system,Segoe UI,sans-serif;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+    main{height:100dvh;max-width:760px;margin:auto;padding:12px 14px;display:flex;flex-direction:column;gap:10px}header{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:44px}h1{font-size:clamp(21px,6vw,30px);letter-spacing:-.04em;margin:0}button{font:inherit;color:var(--text);background:#26343e;border:1px solid #465664;border-radius:10px;min-height:44px;padding:8px 14px;cursor:pointer;touch-action:manipulation}button:hover,button:focus-visible{border-color:var(--accent);outline:2px solid #7dd3b055;outline-offset:1px}.minor{min-height:38px;padding:5px 11px;font-size:13px}.timer{font-variant-numeric:tabular-nums;font-size:clamp(25px,8vw,38px);font-weight:800;letter-spacing:.03em;color:var(--accent);white-space:nowrap}.topline{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);padding-bottom:8px}.meta{display:flex;gap:12px;flex-wrap:wrap;color:var(--muted);font-size:12px}.meta strong{color:var(--text);font-variant-numeric:tabular-nums}.instruction{margin:0;color:var(--muted);font-size:13px}.panel{background:#172029cc;border:1px solid var(--line);border-radius:14px;padding:10px}.modules{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}.module{min-height:70px;text-align:left;padding:9px 7px;background:#202d37;border-color:#52636e;display:flex;flex-direction:column;justify-content:space-between}.module b{font-size:16px}.module small{color:var(--muted);font-size:11px}.module.selected{border-color:var(--accent);background:#21423e}.module.disabled{opacity:.5;cursor:not-allowed}.tests{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.test{min-height:73px;text-align:left;padding:8px}.test b{display:block;font-size:14px}.test small{display:block;color:var(--muted);margin-top:3px;font-size:11px}.test .out{display:block;margin-top:5px;font-weight:750;min-height:17px}.pass{color:var(--good)}.fail{color:var(--bad)}.result{min-height:48px;display:flex;align-items:center;justify-content:space-between;gap:10px;border-left:4px solid var(--line)}.result.good{border-left-color:var(--good)}.result.bad{border-left-color:var(--bad)}#result{font-weight:700}.actions{display:flex;gap:8px;margin-top:auto}.actions button{flex:1}.seed{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:12px}.seed code{color:var(--text);background:#0d1216;border-radius:5px;padding:3px 6px}.overlay{position:fixed;inset:0;z-index:5;background:#0e1419f5;display:grid;place-items:center;padding:24px}.overlay[hidden]{display:none}.start-card{width:min(390px,100%);text-align:center;background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:28px 20px}.start-card h2{margin:0 0 8px;font-size:25px}.start-card p{margin:0 0 22px;color:var(--muted);font-size:14px}.play{width:100%;font-size:20px;font-weight:800;background:var(--accent);color:#10201b;border-color:var(--accent)}.status{font-size:12px;color:var(--muted);min-height:15px}@media(min-width:600px){main{padding:18px 22px;gap:14px}.panel{padding:14px}.module{min-height:84px;padding:12px}.test{min-height:86px}}
+  </style>
+  <style>
+    .module{min-height:54px}.module b{font-size:14px}.modules{grid-template-columns:repeat(4,1fr);gap:5px}.tests{grid-template-columns:repeat(4,1fr);gap:5px}.test{min-height:68px}.test small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}@media(max-height:700px){main{gap:6px;padding-block:7px}.panel{padding:6px}.module{min-height:46px}.test{min-height:58px}}
+  </style>
+  <style>
+    .module{min-height:54px}.module b{font-size:14px}.modules{grid-template-columns:repeat(4,1fr);gap:5px}.tests{grid-template-columns:repeat(4,1fr);gap:5px}.test{min-height:68px}.test small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}@media(max-height:700px){main{gap:6px;padding-block:7px}.panel{padding:6px}.module{min-height:46px}.test{min-height:58px}}
+  </style>
+</head>
+<body>
+  <div class="overlay" id="overlay">
+    <section class="start-card" aria-labelledby="start-title">
+      <h2 id="start-title">Painel de diagnóstico</h2>
+       <p>Cruze os grupos de cobertura e descubra o único módulo com falha.</p>
+        <button class="play" id="start-button" data-testid="start-button" aria-label="Iniciar diagnóstico">Play</button><button class="tutorial-launch" data-tutorial-button data-testid="tutorial-button" type="button">Tutorial</button>
+       <button class="minor" id="overlay-seed-button" data-testid="overlay-seed-button" type="button">Abrir seed</button>
+    </section>
+  </div>
+  <main>
+    <header><h1>Painel de diagnóstico</h1><div class="timer" id="timer" aria-label="Tempo">00:00.0</div></header>
+    <div class="topline"><div class="meta"><span>Testes: <strong id="tests-count">0</strong></span><span>Tentativas: <strong id="attempts-count">0</strong></span></div><span class="status" id="status" aria-live="polite">Aguardando início</span></div>
+    <p class="instruction">Cruze os quatro grupos de cobertura e selecione o único suspeito.</p>
+    <section class="panel" aria-label="Módulos"><div class="modules" id="modules"></div></section>
+    <section class="panel" aria-label="Testes de grupo"><div class="tests" id="tests"></div></section>
+    <section class="panel result" id="result" data-testid="result" aria-live="polite"><span>Ainda sem diagnóstico.</span><button class="minor" id="submit-button" disabled>Diagnosticar</button></section>
+    <div class="seed">Seed: <code id="seed-value"></code></div>
+    <div class="actions"><button class="minor" id="seed-button" data-testid="seed-button" aria-label="Abrir diagnóstico por seed">Abrir seed</button><button class="minor" id="reset-button" data-testid="reset-button" aria-label="Reiniciar diagnóstico">Reiniciar</button><button class="minor" id="new-button" data-testid="new-button" aria-label="Criar novo diagnóstico">Novo</button></div>
+  </main>
+  <script>
+    (() => {
+      const params = new URLSearchParams(location.search);
+      const parsed = Number.parseInt(params.get('seed'), 10);
+      let seed = Number.isFinite(parsed) && parsed >= 0 ? parsed % 1000000000 : Math.floor(Math.random() * 1000000000);
+      let faulty = seed % 12;
+      let running = false, finished = false, selected = -1, tests = 0, attempts = 0, startedAt = 0, elapsed = 0, timerId;
+      const $ = id => document.getElementById(id);
+      const testKeys = ['a','b','c','d'];
+      const testsMap = Object.fromEntries(testKeys.map((key, bit) => [key, Array.from({length:12}, (_, i) => i).filter(i => ((i + 1) >> bit) & 1)]));
+      function buildBoard(){
+        $('modules').innerHTML=Array.from({length:12},(_,i)=>{const covered=testKeys.filter(key=>testsMap[key].includes(i)).map(key=>key.toUpperCase()).join(' + ');return `<button class="module" id="module-${i+1}" data-testid="module-${i+1}" aria-label="Selecionar módulo ${i+1}"><b>Módulo ${i+1}</b><small>${covered}</small></button>`}).join('');
+        $('tests').innerHTML=testKeys.map(key=>`<button class="test" id="test-${key}" data-testid="test-${key}" aria-label="Executar teste ${key.toUpperCase()}"><b>Teste ${key.toUpperCase()}</b><small>${testsMap[key].map(i=>i+1).join(' · ')}</small><span class="out" id="out-${key}"></span></button>`).join('');
+        document.querySelectorAll('.module').forEach((el,i)=>el.addEventListener('click',()=>{if(running&&!finished){selected=i;$('status').textContent=`Módulo ${i+1} selecionado`;render()}}));
+        testKeys.forEach(key=>$(`test-${key}`).addEventListener('click',()=>runTest(key)));
+      }
+      function format(ms){const s=ms/1000;return `${String(Math.floor(s/60)).padStart(2,'0')}:${String(Math.floor(s%60)).padStart(2,'0')}.${Math.floor(s%1*10)}`}
+      function setUrl(){history.replaceState(null,'',`?seed=${seed}`);$('seed-value').textContent=seed}
+      function render(){
+        $('tests-count').textContent=tests;$('attempts-count').textContent=attempts;$('timer').textContent=format(running?performance.now()-startedAt:elapsed);
+        document.querySelectorAll('.module').forEach((el,i)=>el.classList.toggle('selected',i===selected));
+        $('submit-button').disabled=!running||selected<0||finished;
+      }
+      function reset(){clearInterval(timerId);running=false;finished=false;selected=-1;tests=0;attempts=0;elapsed=0;$('overlay').hidden=false;$('status').textContent='Aguardando início';$('result').className='panel result';$('result').firstElementChild.textContent='Ainda sem diagnóstico.';testKeys.forEach(k=>{$(`out-${k}`).textContent='';$(`out-${k}`).className='out'});document.querySelectorAll('.test,.module').forEach(el=>el.disabled=false);render()}
+      function start(){if(running)return;running=true;startedAt=performance.now();$('overlay').hidden=true;$('status').textContent='Investigue os grupos';timerId=setInterval(render,100);render()}
+      function runTest(key){const button=$(`test-${key}`);if(!running||finished||button.disabled)return;const result=testsMap[key].includes(faulty);tests++;button.disabled=true;const out=$(`out-${key}`);out.textContent=result?'Falha':'Passa';out.className=`out ${result?'fail':'pass'}`;$('status').textContent=`Teste ${key.toUpperCase()} executado`;render()}
+      function diagnose(){if(!running||selected<0||finished)return;attempts++;if(selected===faulty){elapsed=performance.now()-startedAt;running=false;finished=true;clearInterval(timerId);$('result').className='panel result good';$('result').firstElementChild.textContent=`Diagnóstico correto. Módulo ${selected+1} | ${format(elapsed)}`;$('status').textContent='Concluído';document.querySelectorAll('.test,.module').forEach(el=>el.disabled=true)}else{$('result').className='panel result bad';$('result').firstElementChild.textContent='Diagnóstico incorreto. Continue investigando.';$('status').textContent='A tentativa foi registrada; o painel continua ativo.'}render()}
+      function newPuzzle(){seed=(seed+1+((seed*17)%997))%1000000000;faulty=seed%12;setUrl();reset()}
+      function openSeed(){const value=window.prompt('Digite uma seed de até 9 números.',seed);if(value===null)return;if(!/^\d{1,9}$/.test(value)){$('status').textContent='Seed inválida. Use de 1 a 9 números.';return}seed=Number(value);faulty=seed%12;setUrl();reset()}
+      $('start-button').addEventListener('click',start);$('submit-button').addEventListener('click',diagnose);$('seed-button').addEventListener('click',openSeed);$('overlay-seed-button').addEventListener('click',openSeed);$('reset-button').addEventListener('click',reset);$('new-button').addEventListener('click',newPuzzle);
+      buildBoard();setUrl();reset();
+    })();
+  </script>
+  <script src="../../tutorial.js"></script>
+</body>
+</html>

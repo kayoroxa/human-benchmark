@@ -443,6 +443,7 @@
     </div>
     <button id="startBtn" class="bigPlay" type="button" aria-label="Começar">▶</button>
     <div class="startHint">Toque para começar</div>
+    <button class="tutorial-launch" data-tutorial-button data-testid="tutorial-button" type="button">Tutorial</button>
     <button id="overlaySeedBtn" class="startSeedBtn" type="button" aria-label="Abrir puzzle por seed"></button>
   </div>
 </div>
@@ -1146,5 +1147,6 @@ if(!requestedSeed || !/^[0-9a-z]{1,5}$/.test(requestedSeed) || !loadPuzzle(reque
   newPuzzle();
 }
 </script>
+<script src="../../tutorial.js"></script>
 </body>
 </html>

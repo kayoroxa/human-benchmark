@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Rede de fluxo</title>
+  <style>
+    :root{color-scheme:dark;--bg:#10151a;--panel:#182129;--line:#364652;--ink:#edf3f5;--muted:#9aabb4;--accent:#79b7ff;--good:#8ee1ad;--bad:#ff9f94}*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;overscroll-behavior:none}body{width:100vw;height:100dvh;background:linear-gradient(145deg,#14212c,var(--bg) 60%);color:var(--ink);font:15px/1.25 system-ui,-apple-system,"Segoe UI",sans-serif;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}main{width:100%;height:100%;max-width:760px;margin:auto;padding:11px;display:flex;flex-direction:column;gap:8px}.top{display:flex;align-items:center;justify-content:space-between;gap:10px}.eyebrow{font-size:10px;color:var(--muted);font-weight:800;text-transform:uppercase;letter-spacing:.1em}.seed-control{min-height:0;padding:0;border:0;background:transparent;color:var(--accent);font:inherit;text-decoration:underline;cursor:pointer}.overlay .seed-control{margin-top:8px;min-height:44px;padding:8px 14px;border:1px solid var(--line);border-radius:10px;background:#26343f;color:var(--accent);font-size:14px}h1{margin:1px 0 0;font-size:clamp(22px,7vw,31px);letter-spacing:-.04em}.timer{font-size:24px;color:var(--accent);font-weight:850;font-variant-numeric:tabular-nums}.meta{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}.stat{min-width:0;border:1px solid var(--line);border-radius:9px;background:#172029;padding:6px;text-align:center}.stat span{display:block;color:var(--muted);font-size:10px}.stat strong{display:block;margin-top:2px;font-size:17px;font-variant-numeric:tabular-nums}.network{display:grid;grid-template-columns:1fr 1fr 1fr;align-items:center;gap:6px;min-height:76px}.node{border:1px solid var(--line);border-radius:10px;background:#1b2731;padding:8px;text-align:center;font-size:12px;font-weight:800}.node small{display:block;margin-top:3px;color:var(--muted);font-size:10px;font-weight:500}.links{display:grid;gap:3px;text-align:center;color:var(--muted);font-size:10px}.route-list{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}.route{min-width:0;border:1px solid var(--line);border-radius:11px;background:var(--panel);padding:7px}.route-head{display:flex;justify-content:space-between;align-items:center;gap:5px;font-weight:800;font-size:13px}.route-meta{margin-top:2px;color:var(--muted);font-size:10px}.route-controls{display:grid;grid-template-columns:42px 1fr 42px;align-items:center;gap:5px;margin-top:7px}.route-controls button,.actions button{min-height:42px;border:1px solid var(--line);border-radius:8px;background:#26343f;color:var(--ink);font:800 17px/1 system-ui;cursor:pointer;touch-action:manipulation}.route-controls button:hover,.route-controls button:focus-visible,.actions button:focus-visible{outline:2px solid #79b7ff55;outline-offset:1px;border-color:var(--accent)}.quantity{text-align:center;font-size:20px;font-weight:850;font-variant-numeric:tabular-nums}.result{min-height:39px;display:flex;align-items:center;justify-content:center;padding:7px 9px;border:1px solid var(--line);border-radius:9px;background:#172029;text-align:center;color:var(--muted);font-size:12px}.result.good{border-color:#40825a;color:var(--good)}.result.bad{border-color:#814942;color:var(--bad)}.actions{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:6px;margin-top:auto}.actions button{font-size:13px}.actions .primary{background:var(--accent);border-color:var(--accent);color:#112639}.overlay{position:fixed;inset:0;z-index:3;display:grid;place-items:center;padding:24px;background:#0d1319f2}.overlay[hidden]{display:none}.modal{width:min(350px,100%);text-align:center}.modal h2{margin:0 0 8px;font-size:29px}.modal p{margin:0 0 22px;color:var(--muted)}.modal button{width:100%;min-height:62px;border:0;border-radius:12px;background:var(--accent);color:#112639;font:850 19px/1 system-ui;cursor:pointer}@media(max-height:630px){main{padding:7px;gap:5px}.network{min-height:60px}.route{padding:5px}.route-controls{margin-top:4px}.route-controls button{min-height:37px}.actions button{min-height:39px}}
+  </style>
+  <style>
+    .meta{grid-template-columns:repeat(3,1fr)}.network{min-height:50px}.route-list{grid-template-columns:repeat(3,1fr);gap:5px}.route{padding:6px}.route-controls button{min-height:38px}.route-meta{font-size:10px}@media(max-height:700px){main{gap:5px;padding-block:6px}.network{display:none}.route{padding:4px}.route-controls button{min-height:34px}}
+  </style>
+</head>
+<body>
+  <main>
+    <header class="top"><div><div class="eyebrow">Pensamento sistêmico · seed <span id="seed"></span> · <button id="seed-button" data-testid="seed-button" class="seed-control" type="button">abrir</button></div><h1>Rede de fluxo</h1></div><div id="timer" class="timer" aria-label="Tempo">00:00.0</div></header>
+    <section class="meta" id="network-meta" aria-label="Estado da rede"></section>
+    <section class="network" aria-label="Rotas disponíveis"><div class="node">3 fontes<small>9 unidades</small></div><div class="links"><span>Capacidade por rota</span><span>Fontes e destinos limitam</span><span>Custos nas rotas abaixo</span></div><div class="node">3 destinos<small>demanda total 9</small></div></section>
+    <section id="routes" class="route-list" aria-label="Distribuição por rota"></section>
+    <section id="result" data-testid="result" class="result" aria-live="polite">Distribua 6 unidades. Entregue toda a demanda com o menor custo.</section>
+    <nav class="actions" aria-label="Controles"><button id="execute-button" data-testid="execute-button" class="primary" type="button">Executar</button><button id="reset-button" data-testid="reset-button" type="button">Reiniciar</button><button id="new-button" data-testid="new-button" type="button">Novo</button></nav>
+  </main>
+  <div id="overlay" class="overlay"><div class="modal"><h2>Rede de fluxo</h2><p>Distribua nove unidades entre três fontes e três destinos pelo menor custo.</p><button id="start-button" data-testid="start-button" type="button">Iniciar</button><button class="tutorial-launch" data-tutorial-button data-testid="tutorial-button" type="button">Tutorial</button><button id="overlay-seed-button" data-testid="overlay-seed-button" class="seed-control" type="button">Abrir seed</button></div></div>
+  <script>
+    (() => {
+      const $ = id => document.getElementById(id);
+      const querySeed = Number.parseInt(new URLSearchParams(location.search).get('seed'), 10);
+      let seed = Number.isFinite(querySeed) ? querySeed >>> 0 : Math.floor(Math.random() * 0xffffffff);
+      let template, quantities, running = false, finished = false, attempts = 0, startedAt = 0, timerId = 0;
+      const templates = [
+        { sources:{a:4,b:3,c:2}, demand:{n:3,m:3,s:3}, costs:[[1,5,4],[4,2,1],[2,1,5]] },
+        { sources:{a:3,b:4,c:2}, demand:{n:2,m:4,s:3}, costs:[[4,1,5],[1,4,2],[3,2,1]] },
+        { sources:{a:2,b:3,c:4}, demand:{n:3,m:2,s:4}, costs:[[1,4,3],[5,1,2],[2,4,1]] }
+      ].map(value => ({...value, routes:['a','b','c'].flatMap((source,si)=>['n','m','s'].map((destination,di)=>[`${source}-${destination}`,source.toUpperCase(),({n:'Norte',m:'Centro',s:'Sul'})[destination],source,destination,3,value.costs[si][di]]))}));
+      const format = ms => { const t=Math.floor(ms / 100); return `${String(Math.floor(t / 600)).padStart(2,'0')}:${String(Math.floor(t / 10) % 60).padStart(2,'0')}.${t % 10}`; };
+      const usedFrom = source => template.routes.reduce((sum, route) => sum + (route[3] === source ? quantities[route[0]] : 0), 0);
+      const sentTo = destination => template.routes.reduce((sum, route) => sum + (route[4] === destination ? quantities[route[0]] : 0), 0);
+      const cost = () => template.routes.reduce((sum, route) => sum + quantities[route[0]] * route[6], 0);
+      function renderState() {
+        $('network-meta').innerHTML = [...Object.keys(template.sources).map(key=>`<div class="stat"><span>Fonte ${key.toUpperCase()}</span><strong>${template.sources[key]-usedFrom(key)}</strong></div>`),...Object.keys(template.demand).map(key=>`<div class="stat"><span>${({n:'Norte',m:'Centro',s:'Sul'})[key]}</span><strong>${template.demand[key]-sentTo(key)}</strong></div>`)].join('');
+        $('routes').innerHTML = template.routes.map(([id, sourceName, destName, source, destination, capacity, unitCost]) => `<article class="route"><div class="route-head"><span>${sourceName} -> ${destName}</span><span>custo ${unitCost}</span></div><div class="route-meta">Capacidade ${capacity} · fluxo ${quantities[id]}</div><div class="route-controls"><button type="button" data-testid="minus-${id}" aria-label="Remover uma unidade da rota ${sourceName} para ${destName}" data-route="${id}" data-change="-1">-</button><output class="quantity" aria-label="Unidades na rota ${sourceName} para ${destName}">${quantities[id]}</output><button type="button" data-testid="plus-${id}" aria-label="Adicionar uma unidade na rota ${sourceName} para ${destName}" data-route="${id}" data-change="1">+</button></div></article>`).join('');
+        $('routes').querySelectorAll('button').forEach(button => button.addEventListener('click', () => change(button.dataset.route, Number(button.dataset.change))));
+      }
+      function showMessage(text, type = '') { const result = $('result'); result.className = `result ${type}`; result.textContent = text; }
+      function change(id, amount) {
+        if (!running || finished) return;
+        const route = template.routes.find(item => item[0] === id);
+        const [, , , source, destination, capacity] = route;
+        if (amount < 0 && quantities[id] === 0) return;
+        if (amount > 0 && (quantities[id] === capacity || usedFrom(source) === template.sources[source] || sentTo(destination) === template.demand[destination])) { showMessage('Essa unidade ultrapassaria uma capacidade, fonte ou destino.'); return; }
+        quantities[id] += amount; showMessage('Fluxo ajustado. Verifique os gargalos antes de executar.'); renderState();
+      }
+      function findOptimal() {
+        let best=Infinity;
+        function visit(index,total){if(total>=best)return;if(index===template.routes.length){if(Object.keys(template.sources).every(key=>usedFrom(key)===template.sources[key])&&Object.keys(template.demand).every(key=>sentTo(key)===template.demand[key]))best=total;return}const route=template.routes[index];for(let value=0;value<=route[5];value++){quantities[route[0]]=value;if(usedFrom(route[3])<=template.sources[route[3]]&&sentTo(route[4])<=template.demand[route[4]])visit(index+1,total+value*route[6])}quantities[route[0]]=0}visit(0,0);return best;
+      }
+      function reset() {
+        clearInterval(timerId); template = templates[seed % templates.length]; quantities = Object.fromEntries(template.routes.map(route => [route[0], 0])); template.optimal=findOptimal(); running = false; finished = false; attempts = 0;
+        $('timer').textContent = '00:00.0'; $('seed').textContent = seed.toString(36); $('overlay').hidden = false; showMessage('Distribua 9 unidades. Entregue toda a demanda com o menor custo.'); renderState();
+      }
+      function start() { if (running) return; running = true; startedAt = performance.now(); $('overlay').hidden = true; timerId = setInterval(() => { $('timer').textContent = format(performance.now() - startedAt); }, 100); }
+      function execute() {
+        if (!running || finished) return;
+        attempts++;
+        const remaining = Object.entries(template.demand).reduce((sum, [key, demand]) => sum + demand - sentTo(key), 0);
+        if (remaining) { showMessage(`Ainda faltam ${remaining} unidade${remaining === 1 ? '' : 's'} nos destinos.`, 'bad'); return; }
+        if (cost() === template.optimal) { finished = true; running = false; clearInterval(timerId); showMessage(`Otimizado: custo ${cost()} em ${$('timer').textContent} · ${attempts} tentativa${attempts === 1 ? '' : 's'}.`, 'good'); }
+        else showMessage(`Demanda atendida por custo ${cost()}. Existe uma distribuição mais barata; revise as rotas que competem pela mesma fonte.`, 'bad');
+      }
+      function openSeed() { const value=window.prompt('Digite uma seed de até 10 números.',seed); if(value===null)return; if(!/^\d{1,10}$/.test(value)){ showMessage('Seed inválida. Use de 1 a 10 números.','bad'); return; } seed=Number(value) >>> 0; history.replaceState(null, '', `?seed=${seed}`); reset(); }
+      function newPuzzle() { seed = (seed * 1664525 + 1013904223) >>> 0; history.replaceState(null, '', `?seed=${seed}`); reset(); }
+      $('start-button').addEventListener('click', start); $('execute-button').addEventListener('click', execute); $('seed-button').addEventListener('click', openSeed); $('overlay-seed-button').addEventListener('click', openSeed); $('reset-button').addEventListener('click', reset); $('new-button').addEventListener('click', newPuzzle); reset();
+    })();
+  </script>
+  <script src="../../tutorial.js"></script>
+</body>
+</html>

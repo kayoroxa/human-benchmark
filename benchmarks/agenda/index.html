@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Agenda de recursos</title>
+  <style>
+    :root { color-scheme: dark; --bg:#101820; --panel:#182532; --line:#354858; --ink:#eef5f7; --muted:#aab8c1; --accent:#63d4bb; --warn:#ffca65; --bad:#ff8d85; }
+    * { box-sizing:border-box; }
+    html, body { margin:0; width:100%; height:100%; overflow:hidden; overscroll-behavior:none; }
+    body { background:radial-gradient(circle at 80% 0%, #233746 0, var(--bg) 48%); color:var(--ink); font:500 15px/1.25 system-ui,-apple-system,Segoe UI,sans-serif; }
+    button { font:inherit; color:inherit; cursor:pointer; }
+    .app { width:100vw; height:100dvh; min-height:100%; display:flex; flex-direction:column; padding:calc(12px + env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left)); gap:10px; }
+    header { min-height:54px; display:flex; align-items:center; justify-content:space-between; gap:10px; }
+    h1 { margin:0; font-size:clamp(20px,5vw,30px); letter-spacing:-.04em; }
+    .meta { color:var(--muted); font-size:11px; text-align:right; }
+    .seed-control { min-height:0; padding:0; border:0; background:transparent; color:var(--accent); font-size:11px; text-decoration:underline; }
+    .overlay .seed-control { margin-top:8px; min-height:44px; padding:8px 14px; border:1px solid var(--line); border-radius:10px; background:#14212b; font-size:13px; }
+    .timer { flex:0 0 94px; text-align:center; font:700 26px/1 tabular-nums,monospace; color:var(--accent); background:#0d151c; border:1px solid var(--line); border-radius:12px; padding:10px 8px; }
+    .brief { color:var(--muted); margin:0; font-size:13px; }
+    .board { display:flex; flex-direction:column; gap:8px; min-height:0; }
+    .lane { display:grid; grid-template-columns:62px repeat(5,1fr); gap:4px; align-items:stretch; }
+    .lane-name { display:flex; align-items:center; font-weight:750; font-size:12px; color:var(--muted); }
+    .lane-name span { display:block; }
+    .slot { min-width:0; min-height:68px; border:1px solid var(--line); border-radius:10px; background:#14212b; padding:5px; display:flex; align-items:center; justify-content:center; text-align:center; touch-action:manipulation; transition:border-color .12s,background .12s; }
+    .slot:focus-visible, .task:focus-visible, button:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+    .slot.compatible { border-color:var(--accent); background:#173b3b; }
+    .slot.incompatible { opacity:.42; }
+    .slot .empty { color:#657683; font-size:11px; }
+    .slot .placed { width:100%; font-size:12px; font-weight:750; }
+    .slot .placed small { display:block; color:var(--muted); font-size:10px; font-weight:500; margin-top:3px; }
+    .axis { display:grid; grid-template-columns:62px repeat(5,1fr); gap:4px; color:var(--muted); font-size:10px; text-align:center; }
+    .tasks { display:grid; grid-template-columns:repeat(4,1fr); gap:5px; }
+    .task { min-width:0; min-height:58px; padding:7px 4px; border:1px solid var(--line); border-radius:10px; background:var(--panel); text-align:center; touch-action:manipulation; }
+    .task strong { display:block; font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .task small { display:block; margin-top:4px; color:var(--muted); font-size:10px; }
+    .task.selected { border-color:var(--accent); background:#1d4a48; box-shadow:0 0 0 2px #63d4bb33; }
+    .task.scheduled { opacity:.55; }
+    .actions { display:grid; grid-template-columns:1.35fr 1fr 1fr; gap:7px; margin-top:auto; }
+    .actions button { min-height:46px; border:1px solid var(--line); border-radius:10px; background:#20313d; font-weight:750; }
+    .actions .primary { background:var(--accent); color:#0e2425; border-color:var(--accent); }
+    .result { min-height:35px; padding:8px 10px; border-radius:9px; background:#16232d; color:var(--muted); font-size:12px; }
+    .result.success { background:#16433c; color:#b9f5dc; }
+    .result.error { background:#442b2b; color:#ffd0ca; }
+    .overlay { position:fixed; inset:0; z-index:5; display:grid; place-items:center; padding:24px; background:#0c141bdd; backdrop-filter:blur(8px); }
+    .overlay[hidden] { display:none; }
+    .overlay-card { width:min(340px,100%); text-align:center; padding:26px 20px; border:1px solid var(--line); border-radius:18px; background:#182832; box-shadow:0 16px 60px #0008; }
+    .overlay-card h2 { margin:0 0 8px; font-size:24px; }
+    .overlay-card p { margin:0 0 20px; color:var(--muted); font-size:13px; }
+    #start-button { width:100%; min-height:58px; border:0; border-radius:12px; background:var(--accent); color:#0d2424; font-size:21px; font-weight:800; }
+    @media (min-width:700px) { .app { max-width:820px; margin:auto; } .slot { min-height:88px; } .task { min-height:64px; } }
+  </style>
+</head>
+<body>
+  <main class="app" aria-label="Benchmark Agenda de recursos">
+    <header><h1>Agenda de recursos</h1><div><div class="timer" id="timer" aria-label="Tempo">00:00.0</div><div class="meta">seed <b id="seed-label"></b> · <button class="seed-control" id="seed-button" data-testid="seed-button" type="button">abrir</button> · tentativas <b id="attempts">0</b></div></div></header>
+    <p class="brief">Toque numa tarefa e depois num horário livre compatível.</p>
+    <section class="board" aria-label="Agenda de quatro horários">
+      <div class="axis"><span></span><span>T1</span><span>T2</span><span>T3</span><span>T4</span><span>T5</span></div>
+      <div class="lane"><div class="lane-name"><span>Equipe</span></div><button class="slot" id="slot-equipe-1" data-resource="equipe" data-time="1" aria-label="Equipe T1"><span class="empty">livre</span></button><button class="slot" id="slot-equipe-2" data-resource="equipe" data-time="2" aria-label="Equipe T2"><span class="empty">livre</span></button><button class="slot" id="slot-equipe-3" data-resource="equipe" data-time="3" aria-label="Equipe T3"><span class="empty">livre</span></button><button class="slot" id="slot-equipe-4" data-resource="equipe" data-time="4" aria-label="Equipe T4"><span class="empty">livre</span></button><button class="slot" id="slot-equipe-5" data-resource="equipe" data-time="5" aria-label="Equipe T5"><span class="empty">livre</span></button></div>
+      <div class="lane"><div class="lane-name"><span>Máquina</span></div><button class="slot" id="slot-maquina-1" data-resource="maquina" data-time="1" aria-label="Máquina T1"><span class="empty">livre</span></button><button class="slot" id="slot-maquina-2" data-resource="maquina" data-time="2" aria-label="Máquina T2"><span class="empty">livre</span></button><button class="slot" id="slot-maquina-3" data-resource="maquina" data-time="3" aria-label="Máquina T3"><span class="empty">livre</span></button><button class="slot" id="slot-maquina-4" data-resource="maquina" data-time="4" aria-label="Máquina T4"><span class="empty">livre</span></button><button class="slot" id="slot-maquina-5" data-resource="maquina" data-time="5" aria-label="Máquina T5"><span class="empty">livre</span></button></div>
+    </section>
+    <section class="tasks" aria-label="Tarefas"><button class="task" id="task-preparar" data-task="preparar"><strong>Preparar</strong><small>Equipe · antes do corte</small></button><button class="task" id="task-auditar" data-task="auditar"><strong>Auditar</strong><small>Equipe · após preparar · até T2</small></button><button class="task" id="task-cortar" data-task="cortar"><strong>Cortar</strong><small>Máquina · após preparar + calibrar</small></button><button class="task" id="task-revisar" data-task="revisar"><strong>Revisar</strong><small>Equipe · após cortar</small></button><button class="task" id="task-embalar" data-task="embalar"><strong>Embalar</strong><small>Máquina · após revisar</small></button><button class="task" id="task-entregar" data-task="entregar"><strong>Entregar</strong><small>Equipe · após embalar · T5</small></button><button class="task" id="task-calibrar" data-task="calibrar"><strong>Calibrar</strong><small>Máquina · antes do corte</small></button></section>
+    <div class="result" id="result" data-testid="result" role="status" aria-live="polite">Planeje os sete passos para cumprir os dois prazos.</div>
+    <nav class="actions"><button class="primary" id="execute-button" data-testid="execute-button">Executar</button><button id="reset-button" data-testid="reset-button">Reiniciar</button><button id="new-button" data-testid="new-button">Novo</button></nav>
+  </main>
+  <div class="overlay" id="overlay"><div class="overlay-card"><h2>Pronto para planejar?</h2><p>Agende todos os recursos antes do prazo.</p><button id="start-button" data-testid="start-button">▶ Iniciar</button><button class="tutorial-launch" data-tutorial-button data-testid="tutorial-button" type="button">Tutorial</button><button class="seed-control" id="overlay-seed-button" data-testid="overlay-seed-button" type="button">Abrir seed</button></div></div>
+  <script>
+    (() => {
+      const tasks = { preparar:{label:'Preparar',resource:'equipe'}, auditar:{label:'Auditar',resource:'equipe'}, cortar:{label:'Cortar',resource:'maquina'}, revisar:{label:'Revisar',resource:'equipe'}, embalar:{label:'Embalar',resource:'maquina'}, entregar:{label:'Entregar',resource:'equipe'}, calibrar:{label:'Calibrar',resource:'maquina'} };
+      const taskIds = Object.keys(tasks);
+      const params = new URLSearchParams(location.search);
+      let seed = Number(params.get('seed')) || Math.floor(Math.random() * 9000) + 1000;
+      let schedule = {}; let selected = null; let started = false; let finished = false; let startAt = 0; let elapsed = 0; let attempts = 0; let timerId;
+      const $ = id => document.getElementById(id);
+      $('seed-label').textContent = seed;
+      function randomOrder() { let value = seed; const list = taskIds.slice(); for (let i = list.length - 1; i; i--) { value = (value * 1664525 + 1013904223) >>> 0; const j = value % (i + 1); [list[i],list[j]] = [list[j],list[i]]; } return list; }
+      function format(ms) { const seconds = ms / 1000; return `00:${seconds.toFixed(1).padStart(4,'0')}`; }
+      function tick() { elapsed = performance.now() - startAt; $('timer').textContent = format(elapsed); }
+      function render() {
+        document.querySelectorAll('.task').forEach(button => { const id=button.dataset.task; button.classList.toggle('selected', selected===id); button.classList.toggle('scheduled', Object.values(schedule).includes(id)); });
+        document.querySelectorAll('.slot').forEach(slot => { const id=slot.id; const taskId=schedule[id]; slot.classList.toggle('compatible', Boolean(selected && !taskId && tasks[selected].resource===slot.dataset.resource)); slot.classList.toggle('incompatible', Boolean(selected && !taskId && tasks[selected].resource!==slot.dataset.resource)); slot.innerHTML = taskId ? `<span class="placed">${tasks[taskId].label}<small>toque para remover</small></span>` : '<span class="empty">livre</span>'; });
+      }
+      function selectTask(id) { if (!started || finished) return; selected = selected === id ? null : id; render(); }
+      function place(slot) { if (!started || finished) return; const old=schedule[slot.id]; if (old) { delete schedule[slot.id]; selected=old; } else if (selected && tasks[selected].resource===slot.dataset.resource) { Object.keys(schedule).forEach(key => { if(schedule[key]===selected) delete schedule[key]; }); schedule[slot.id]=selected; selected=null; } render(); }
+      function reset() { clearInterval(timerId); schedule={}; selected=null; started=false; finished=false; elapsed=0; attempts=0; $('attempts').textContent='0'; $('timer').textContent='00:00.0'; $('result').className='result'; $('result').textContent='Planeje os sete passos para cumprir os dois prazos.'; $('task-auditar').querySelector('small').textContent=seed%2?'Equipe · após cortar · até T4':'Equipe · após preparar · até T2'; randomOrder().forEach((id,index)=>{ $(`task-${id}`).style.order=index; }); $('overlay').hidden=false; render(); }
+      function start() { if (started) return; started=true; $('overlay').hidden=true; startAt=performance.now(); timerId=setInterval(tick,100); }
+      function execute() { if(!started || finished) return; attempts++; $('attempts').textContent=attempts; const at=Object.fromEntries(Object.entries(schedule).map(([slot,id])=>[id,Number(slot.split('-').at(-1))])); const complete=taskIds.every(id=>at[id]); const auditOk=seed%2?at.cortar<at.auditar&&at.auditar<=4:at.preparar<at.auditar&&at.auditar<=2; const optimized=complete&&auditOk&&at.auditar<at.entregar&&at.preparar<at.cortar&&at.calibrar<at.cortar&&at.cortar<at.revisar&&at.revisar<at.embalar&&at.embalar<at.entregar&&at.entregar===5; const result=$('result'); if(optimized) { clearInterval(timerId); started=false; finished=true; result.className='result success'; result.textContent=`✓ Otimizado · ${format(elapsed)} · ${attempts} tentativa${attempts===1?'':'s'}`; } else { result.className='result error'; result.textContent='✕ Há uma dependência, o prazo da auditoria ou a entrega em T5 fora do plano. A agenda foi preservada.'; } }
+      document.querySelectorAll('.task').forEach(button=>button.addEventListener('click',()=>selectTask(button.dataset.task)));
+      document.querySelectorAll('.slot').forEach(slot=>slot.addEventListener('click',()=>place(slot)));
+      function openSeed() { const value=window.prompt('Digite uma seed de até 9 números.',seed); if(value===null)return; if(!/^\d{1,9}$/.test(value)){ $('result').className='result error'; $('result').textContent='Seed inválida. Use de 1 a 9 números.'; return; } seed=Number(value); history.replaceState(null,'',`?seed=${seed}`); $('seed-label').textContent=seed; reset(); }
+      $('start-button').addEventListener('click',start); $('execute-button').addEventListener('click',execute); $('seed-button').addEventListener('click',openSeed); $('overlay-seed-button').addEventListener('click',openSeed); $('reset-button').addEventListener('click',reset); $('new-button').addEventListener('click',()=>{ seed=Math.floor(Math.random()*9000)+1000; history.replaceState(null,'',`?seed=${seed}`); $('seed-label').textContent=seed; reset(); });
+      render();
+    })();
+  </script>
+  <script src="../../tutorial.js"></script>
+</body>
+</html>

@@ -1,0 +1,421 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Memória de palavras</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --blue: #2f89cc;
+      --blue-deep: #206ca8;
+      --white: #ffffff;
+      --soft-white: #b9dcf5;
+      --yellow: #ffd45b;
+      --ink: #17273d;
+      --danger: #ffe1e4;
+      --success: #dcf8e7;
+    }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      overscroll-behavior: none;
+    }
+
+    body {
+      min-height: 100dvh;
+      background: var(--blue);
+      color: var(--white);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    button { font: inherit; }
+
+    main {
+      width: 100vw;
+      height: 100dvh;
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      padding: max(24px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(18px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
+    }
+
+    .status {
+      display: flex;
+      justify-content: center;
+      align-items: baseline;
+      gap: clamp(14px, 5vw, 30px);
+      color: var(--soft-white);
+      font-size: clamp(22px, 6vw, 31px);
+      letter-spacing: -0.045em;
+    }
+
+    .stat {
+      white-space: nowrap;
+    }
+
+    .stat strong {
+      color: var(--white);
+      font-weight: 500;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .game {
+      min-height: 0;
+      display: grid;
+      align-content: center;
+      justify-items: center;
+      gap: clamp(20px, 4.5dvh, 38px);
+      padding-bottom: 6dvh;
+    }
+
+    .prompt {
+      margin: 0;
+      color: var(--soft-white);
+      font-size: clamp(14px, 4vw, 18px);
+      font-weight: 650;
+    }
+
+    .word {
+      max-width: min(100%, 720px);
+      margin: -14px 0 0;
+      overflow-wrap: anywhere;
+      color: var(--white);
+      font-size: clamp(48px, 15vw, 88px);
+      font-weight: 400;
+      letter-spacing: -0.065em;
+      line-height: .94;
+      text-align: center;
+    }
+
+    .word.changed { animation: appear .16s ease-out; }
+
+    @keyframes appear {
+      from { opacity: .3; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .choices {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: clamp(14px, 7vw, 36px);
+      width: min(100%, 360px);
+    }
+
+    .choice, .secondary, .start {
+      min-height: 56px;
+      border: 0;
+      border-radius: 4px;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+    .choice {
+      background: var(--yellow);
+      color: var(--ink);
+      font-size: clamp(17px, 5vw, 23px);
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    button:focus-visible { outline: 3px solid var(--white); outline-offset: 3px; }
+    .choice:active, .start:active { transform: translateY(1px); }
+    button:disabled { cursor: default; opacity: .55; }
+
+    .feedback {
+      min-height: 20px;
+      margin: -12px 0 0;
+      color: var(--soft-white);
+      font-size: 14px;
+      font-weight: 750;
+    }
+
+    .feedback.good { color: var(--success); }
+    .feedback.bad { color: var(--danger); }
+
+    .controls {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .secondary {
+      min-height: 44px;
+      padding: 0 13px;
+      border: 1px solid rgba(255, 255, 255, .48);
+      border-radius: 7px;
+      background: transparent;
+      color: var(--white);
+      font-size: 13px;
+      font-weight: 750;
+    }
+
+    .overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 2;
+      display: grid;
+      place-items: center;
+      padding: max(22px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(22px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
+      background: var(--blue);
+    }
+
+    .overlay[hidden] { display: none; }
+
+    .intro {
+      width: min(100%, 440px);
+      text-align: center;
+    }
+
+    .intro h1, .result h2 {
+      margin: 0;
+      font-size: clamp(38px, 12vw, 60px);
+      letter-spacing: -0.06em;
+      line-height: .95;
+    }
+
+    .intro p {
+      margin: 26px auto 34px;
+      color: var(--soft-white);
+      font-size: 17px;
+      line-height: 1.42;
+    }
+
+    .start {
+      width: min(100%, 250px);
+      background: var(--yellow);
+      color: var(--ink);
+      font-size: 21px;
+      font-weight: 850;
+    }
+
+    .result {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      display: grid;
+      place-content: center;
+      justify-items: center;
+      width: 100%;
+      padding: 24px;
+      background: var(--blue);
+      text-align: center;
+    }
+
+    .result[hidden] { display: none; }
+    .result p { margin: 15px 0 30px; color: var(--soft-white); font-size: 18px; }
+    .result strong { color: var(--white); font-size: 26px; }
+    .result .controls { width: min(100%, 310px); display: grid; grid-template-columns: 1fr 1fr; }
+
+    @media (max-height: 560px) {
+      main { padding-top: max(14px, env(safe-area-inset-top)); padding-bottom: max(10px, env(safe-area-inset-bottom)); }
+      .game { gap: 16px; padding-bottom: 0; }
+      .word { font-size: clamp(42px, 12vw, 68px); }
+      .choice { min-height: 48px; }
+      .controls { margin-top: 2px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header class="status" aria-label="Estado da partida">
+      <span class="stat">Vidas | <strong id="lives" data-testid="lives">3</strong></span>
+      <span class="stat">Score | <strong id="score" data-testid="score">0</strong></span>
+    </header>
+
+    <section class="game" aria-label="Palavra atual">
+      <p class="prompt">Você já viu esta palavra?</p>
+      <div id="word" data-testid="word" class="word" aria-live="polite"></div>
+      <div class="choices" aria-label="Resposta">
+        <button id="seen-button" data-testid="seen-button" class="choice" type="button">Já vi</button>
+        <button id="new-button" data-testid="new-button" class="choice" type="button">Nova</button>
+      </div>
+      <p id="feedback" data-testid="feedback" class="feedback" aria-live="polite"></p>
+    </section>
+
+    <nav class="controls" aria-label="Controles">
+      <button id="reset-button" data-testid="reset-button" class="secondary" type="button">Reiniciar</button>
+      <button id="session-button" data-testid="session-button" class="secondary" type="button">Nova sessão</button>
+      <button id="seed-button" data-testid="seed-button" class="secondary" type="button" aria-label="Abrir uma seed">Seed</button>
+    </nav>
+  </main>
+
+  <section id="result" data-testid="result" class="result" hidden aria-live="polite">
+    <h2>Fim de jogo</h2>
+    <p><strong id="final-score">0</strong> palavras lembradas</p>
+    <nav class="controls" aria-label="Controles do resultado">
+      <button id="result-reset-button" class="secondary" type="button">Reiniciar</button>
+      <button id="result-session-button" class="secondary" type="button">Nova sessão</button>
+    </nav>
+  </section>
+
+  <section id="overlay" class="overlay">
+    <div class="intro">
+      <h1>Memória<br>de palavras</h1>
+      <p>Decida se cada palavra é nova ou se já apareceu. A cada erro, você perde uma vida.</p>
+      <button id="start-button" data-testid="start-button" class="start" type="button">Iniciar</button>
+      <button class="tutorial-launch" data-tutorial-button data-testid="tutorial-button" type="button">Tutorial</button>
+    </div>
+  </section>
+
+  <script>
+    (() => {
+      const words = [
+        'abelha', 'abraço', 'água', 'alface', 'alegria', 'algodão', 'amigo', 'anel', 'árvore', 'avião',
+        'banana', 'barco', 'batata', 'biblioteca', 'bolsa', 'borboleta', 'caderno', 'café', 'caminho', 'canela',
+        'casa', 'cavalo', 'cenoura', 'chave', 'chuva', 'cidade', 'claridade', 'coelho', 'colher', 'cometa',
+        'coração', 'cortina', 'cozinha', 'criança', 'cristal', 'dado', 'deserto', 'desenho', 'diamante', 'domingo',
+        'elefante', 'envelope', 'escada', 'espelho', 'estrela', 'farol', 'fatia', 'festa', 'fogo', 'floresta',
+        'formiga', 'framboesa', 'garfo', 'geladeira', 'girassol', 'guitarra', 'história', 'ilha', 'janela', 'jardim',
+        'joaninha', 'lápis', 'laranja', 'leite', 'livro', 'lua', 'madeira', 'maçã', 'mapa', 'mar',
+        'melodia', 'montanha', 'morango', 'mochila', 'navio', 'nuvem', 'oceano', 'óculos', 'outono', 'pássaro',
+        'pedra', 'peixe', 'pente', 'pipoca', 'planeta', 'porta', 'praia', 'presente', 'ponte', 'queijo',
+        'relógio', 'rio', 'rosa', 'sapato', 'sino', 'sol', 'sorvete', 'teclado', 'tigre', 'travesseiro'
+      ];
+
+      const $ = id => document.getElementById(id);
+      const parseSeed = () => {
+        const value = Number.parseInt(new URLSearchParams(location.search).get('seed'), 10);
+        return Number.isFinite(value) ? value >>> 0 : Math.floor(Math.random() * 0xffffffff);
+      };
+      let seed = parseSeed();
+      let random = () => 0;
+      let freshWords = [];
+      let seenWords = [];
+      let currentWord = '';
+      let currentIsSeen = false;
+      let lives = 3;
+      let score = 0;
+      let running = false;
+      let turn = 0;
+      let lastPresented = new Map();
+
+      function createRandom(value) {
+        let state = value || 1;
+        return () => {
+          state = (state * 1664525 + 1013904223) >>> 0;
+          return state / 4294967296;
+        };
+      }
+
+      function shuffle(items) {
+        const copy = [...items];
+        for (let index = copy.length - 1; index > 0; index--) {
+          const target = Math.floor(random() * (index + 1));
+          [copy[index], copy[target]] = [copy[target], copy[index]];
+        }
+        return copy;
+      }
+
+      function updateStatus() {
+        $('lives').textContent = lives;
+        $('score').textContent = score;
+        $('seed-button').textContent = `Seed ${seed}`;
+      }
+
+      function chooseNextWord() {
+        const minimumGap = 4 + Math.floor(score / 8);
+        const eligibleSeen = seenWords.filter(word => turn - lastPresented.get(word) >= minimumGap);
+        currentIsSeen = eligibleSeen.length > 0 && (freshWords.length === 0 || (turn >= 5 && random() < .55));
+        currentWord = currentIsSeen
+          ? eligibleSeen[Math.floor(random() * eligibleSeen.length)]
+          : freshWords.pop();
+        lastPresented.set(currentWord, turn++);
+
+        $('word').textContent = currentWord;
+        $('word').classList.remove('changed');
+        requestAnimationFrame(() => $('word').classList.add('changed'));
+      }
+
+      function setFeedback(message, kind = '') {
+        const feedback = $('feedback');
+        feedback.textContent = message;
+        feedback.className = `feedback ${kind}`;
+      }
+
+      function reset() {
+        random = createRandom(seed);
+        freshWords = shuffle(words);
+        seenWords = [];
+        currentWord = '';
+        currentIsSeen = false;
+        lives = 3;
+        score = 0;
+        running = false;
+        turn = 0;
+        lastPresented = new Map();
+        updateStatus();
+        setFeedback('');
+        $('result').hidden = true;
+        $('overlay').hidden = false;
+      }
+
+      function start() {
+        if (running) return;
+        running = true;
+        $('overlay').hidden = true;
+        chooseNextWord();
+      }
+
+      function finish() {
+        running = false;
+        $('final-score').textContent = score;
+        $('result').hidden = false;
+      }
+
+      function answer(answeredSeen) {
+        if (!running) return;
+
+        const correct = answeredSeen === currentIsSeen;
+        if (correct) {
+          score++;
+          setFeedback('Correto. +1 ponto', 'good');
+        } else {
+          lives--;
+          setFeedback('Incorreto. -1 vida', 'bad');
+        }
+
+        if (!currentIsSeen) seenWords.push(currentWord);
+        updateStatus();
+        if (lives === 0) {
+          finish();
+          return;
+        }
+        chooseNextWord();
+      }
+
+      function newSession() {
+        seed = (seed * 1664525 + 1013904223) >>> 0;
+        history.replaceState(null, '', `?seed=${seed}`);
+        reset();
+      }
+
+      function openSeed() {
+        const value = window.prompt('Digite a seed da sessão:', String(seed));
+        if (value === null) return;
+        const nextSeed = Number.parseInt(value, 10);
+        if (!Number.isFinite(nextSeed)) return;
+        seed = nextSeed >>> 0;
+        history.replaceState(null, '', `?seed=${seed}`);
+        reset();
+      }
+
+      $('start-button').addEventListener('click', start);
+      $('seen-button').addEventListener('click', () => answer(true));
+      $('new-button').addEventListener('click', () => answer(false));
+      $('reset-button').addEventListener('click', reset);
+      $('session-button').addEventListener('click', newSession);
+      $('seed-button').addEventListener('click', openSeed);
+      $('result-reset-button').addEventListener('click', reset);
+      $('result-session-button').addEventListener('click', newSession);
+      reset();
+    })();
+  </script>
+  <script src="../../tutorial.js"></script>
+</body>
+</html>
