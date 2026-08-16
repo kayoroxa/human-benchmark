@@ -204,20 +204,11 @@
 
   .action-copy{min-width:0}
 
-  .action-name{
-    font-size:11px;
-    line-height:1.05;
-    font-weight:760;
-    white-space:nowrap;
-    overflow:hidden;
-    text-overflow:ellipsis;
-  }
-
   .action-eq{
-    margin-top:1px;
-    font-size:9px;
-    line-height:1.05;
-    color:var(--muted);
+    font-size:13px;
+    line-height:1;
+    color:var(--text);
+    font-weight:700;
     white-space:nowrap;
     overflow:hidden;
     text-overflow:ellipsis;
@@ -381,8 +372,7 @@
     .stat{padding:3px 1px}
     .stat strong{font-size:12px}
     .row{padding:2px 5px;gap:4px}
-    .action-name{font-size:10px}
-    .action-eq{font-size:8px}
+    .action-eq{font-size:12px}
     .result{min-height:31px;font-size:9px;padding:3px 5px}
     .btn{min-height:33px;font-size:11px}
   }
@@ -519,10 +509,10 @@ function updateSeed(seed){
 const resourceMeta={
   money:{emoji:'💰',label:'Caixa'},
   wood:{emoji:'🪵',label:'Madeira'},
-  basic:{emoji:'🪑',label:'Cadeira'},
+  basic:{emoji:'🧱',label:'Lote'},
   metal:{emoji:'🔩',label:'Metal'},
-  gear:{emoji:'⚙️',label:'Engren.'},
-  tool:{emoji:'🛠️',label:'Ferram.'},
+  gear:{emoji:'⚙️',label:'Peça'},
+  tool:{emoji:'🛠️',label:'Módulo'},
   premium:{emoji:'📦',label:'Produto'}
 };
 
@@ -607,74 +597,67 @@ function apply(a,s){
 
 /*
   A dificuldade vem da estrutura, não da quantidade de informação:
-  - no início, Comprar madeira E Comprar metal são válidos;
-  - comprar metal parece legítimo e permite mais 2 ações;
-  - só depois a pessoa percebe que ficou sem caixa e sem madeira;
-  - a rota correta usa uma cadeia barata primeiro para gerar caixa,
-    preserva 1 madeira e só então entra na cadeia cara.
+  - duas compras são válidas no início;
+  - a compra cara abre uma cadeia completa de 5 ações, incluindo venda;
+  - só depois da venda a pessoa descobre que não tem caixa para a compra barata;
+  - a rota correta gera caixa primeiro e preserva a unidade inicial para o módulo;
+  - a matéria-prima barata e a cara trocam de papel conforme a seed.
 
   O JavaScript ainda valida o puzzle por força bruta:
   - exatamente 1 permutação completa precisa funcionar;
-  - precisa existir uma rota errada que sobreviva pelo menos 3 passos.
+  - precisa existir uma rota errada que sobreviva pelo menos 5 passos.
 */
 function makeCandidate(random){
-  const startMoney=10+Math.floor(random()*5); // 10..14
-  const woodCost=4+Math.floor(random()*3);    // 4..6
-
-  // Metal é comprável logo no começo, mas caro o suficiente
-  // para impedir a compra posterior da madeira se escolhido primeiro.
-  const metalCost=startMoney-1;
-
-  // Após a venda básica, precisa voltar a ser possível comprar metal.
-  const basicSale=
-    Math.max(
-       8+Math.floor(random()*5),
-      metalCost-(startMoney-woodCost)+1
-    );
-
-  const premiumSale=18+Math.floor(random()*9);
+  const startMoney=12+Math.floor(random()*5); // 12..16
+  const cheapCost=5+Math.floor(random()*3);   // 5..7
+  const expensiveCost=startMoney-2;
+  const basicSale=expensiveCost-(startMoney-cheapCost)+1+Math.floor(random()*3);
+  const premiumSale=2;
+  const support=random()<.5 ? 'wood' : 'metal';
+  const target=support==='wood' ? 'metal' : 'wood';
+  const resourceName={wood:['madeira','madeiras'],metal:['metal','metais']};
 
   const actions=[
     {
-      id:'buyWood',
-      name:'Comprar 2 madeiras',
-      moneyCost:woodCost,
-      produce:{wood:2}
+      id:'buySupport',
+      name:`Comprar 2 ${resourceName[support][1]}`,
+      moneyCost:cheapCost,
+      produce:{[support]:2}
     },
     {
       id:'makeBasic',
-      name:'Fabricar cadeira',
-      consume:{wood:1},
+      name:'Montar lote simples',
+      consume:{[support]:2},
       produce:{basic:1}
     },
     {
       id:'sellBasic',
-      name:'Vender cadeira',
+      name:'Vender lote simples',
       consume:{basic:1},
       moneyGain:basicSale
     },
     {
-      id:'buyMetal',
-      name:'Comprar metal',
-      moneyCost:metalCost,
-      produce:{metal:1}
+      id:'buyTarget',
+      name:`Comprar 2 ${resourceName[target][1]}`,
+      moneyCost:expensiveCost,
+      produce:{[target]:2}
     },
     {
-      id:'forgeGear',
-      name:'Forjar engrenagem',
-      consume:{metal:1},
+      id:'preparePart',
+      name:`Preparar peça de ${resourceName[target][0]}`,
+      consume:{[target]:1},
       produce:{gear:1}
     },
     {
-      id:'assembleTool',
-      name:'Montar ferramenta',
-      consume:{gear:1},
+      id:'assembleModule',
+      name:'Montar módulo',
+      consume:{gear:1,[support]:1},
       produce:{tool:1}
     },
     {
       id:'makePremium',
-      name:'Fabricar produto final',
-      consume:{tool:1,wood:1},
+      name:'Finalizar produto',
+      consume:{tool:1,[target]:1},
       produce:{premium:1}
     },
     {
@@ -688,9 +671,9 @@ function makeCandidate(random){
   return {
     start:{
       money:startMoney,
-      wood:0,
+      wood:support==='wood' ? 1 : 0,
       basic:0,
-      metal:0,
+      metal:support==='metal' ? 1 : 0,
       gear:0,
       tool:0,
       premium:0
@@ -741,7 +724,7 @@ function analyzePuzzle(p){
 
   const solutions=[];
   let maxWrongPrefix=0;
-  let wrongPrefix3=0;
+  let wrongPrefix5=0;
 
   for(const perm of perms){
     const r=evaluatePermutation(p,perm);
@@ -753,7 +736,7 @@ function analyzePuzzle(p){
       });
     }else{
       maxWrongPrefix=Math.max(maxWrongPrefix,r.prefix);
-      if(r.prefix>=3) wrongPrefix3++;
+      if(r.prefix>=5) wrongPrefix5++;
     }
   }
 
@@ -763,7 +746,7 @@ function analyzePuzzle(p){
     solutions,
     initialValid,
     maxWrongPrefix,
-    wrongPrefix3
+    wrongPrefix5
   };
 }
 
@@ -774,9 +757,9 @@ function generatePuzzle(random){
 
     if(
       info.solutions.length===1 &&
-      info.initialValid>=2 &&
-      info.maxWrongPrefix>=3 &&
-      info.wrongPrefix3>=5
+      info.initialValid===2 &&
+      info.maxWrongPrefix>=5 &&
+      info.wrongPrefix5>=1
     ){
       p.solution=info.solutions[0].order;
       p.finalMoney=info.solutions[0].finalMoney;
@@ -797,6 +780,24 @@ function shuffle(arr,random){
   }
 
   return x;
+}
+
+function longestIncreasingSubsequence(orderIds,solutionIds){
+  const positions=new Map(solutionIds.map((id,index)=>[id,index]));
+  const lengths=[];
+
+  for(const id of orderIds){
+    const position=positions.get(id);
+    let best=1;
+
+    for(let i=0;i<lengths.length;i++){
+      if(positions.get(orderIds[i])<position) best=Math.max(best,lengths[i]+1);
+    }
+
+    lengths.push(best);
+  }
+
+  return Math.max(...lengths);
 }
 
 function renderStats(state){
@@ -832,7 +833,6 @@ function makeRow(id,index){
   const copy=document.createElement('div');
   copy.className='action-copy';
   copy.innerHTML=`
-    <div class="action-name">${a.name}</div>
     <div class="action-eq">${describe(a)}</div>
   `;
 
@@ -969,7 +969,7 @@ async function executeOrder(){
     const action=puzzle.actions.find(a=>a.id===order[i]);
 
     row.classList.add('active');
-    els.result.innerHTML=`Executando ${i+1}/8: <b>${action.name}</b>`;
+    els.result.textContent=`Executando ${i+1}/8`;
 
     await sleep(1000);
 
@@ -1090,7 +1090,9 @@ function loadPuzzle(seed){
 
   let shuffled=shuffle(puzzle.actions.map(a=>a.id),random);
 
-  while(shuffled.join('|')===puzzle.solution.join('|')){
+  // Uma subsequência crescente grande deixa o puzzle resolvível com poucos drags.
+  // Exigir LIS <= 4 garante ao menos quatro movimentos na ordem inicial.
+  while(longestIncreasingSubsequence(shuffled,puzzle.solution)>4){
     shuffled=shuffle(puzzle.actions.map(a=>a.id),random);
   }
 
