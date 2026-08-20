@@ -49,6 +49,10 @@
         const shuffle = list => { const copy=list.slice(); for(let i=copy.length-1;i;i--){state=(state*1664525+1013904223)>>>0;const j=state%(i+1);[copy[i],copy[j]]=[copy[j],copy[i]]} return copy; };
         const accepted = shuffle(all.filter(predicate));
         const rejected = shuffle(all.filter(values => !predicate(values)));
+        if (rule === 3 && accepted.slice(0,6).every(([a,b,c,d]) => b === a || c === a || d === a)) {
+          const diagnosticIndex = accepted.findIndex(([a,b,c,d]) => b !== a && c !== a && d !== a);
+          [accepted[5], accepted[diagnosticIndex]] = [accepted[diagnosticIndex], accepted[5]];
+        }
         examples = accepted.slice(0,6).map(text);
         cases = shuffle([...accepted.slice(6,10).map(values=>({value:text(values),accepted:true})),...rejected.slice(0,4).map(values=>({value:text(values),accepted:false}))]);
       }

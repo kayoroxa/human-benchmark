@@ -1,0 +1,1444 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Cronograma de reuniões</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #111312;
+      --surface: #17201e;
+      --surface-2: #09100e;
+      --line: #33413e;
+      --text: #f1f4f3;
+      --muted: #9aa8a4;
+      --accent: #2fa397;
+      --accent-strong: #65d8cd;
+      --rejected: #164845;
+      --ok: #22bd55;
+      --bad: #efc246;
+      --danger: #ff8178;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      overscroll-behavior: none;
+    }
+
+    body {
+      min-height: 100dvh;
+      background: var(--bg);
+      color: var(--text);
+      font: 500 15px/1.25 Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      touch-action: manipulation;
+    }
+
+    button {
+      font: inherit;
+    }
+
+    button:focus-visible {
+      outline: 3px solid #b7fff7;
+      outline-offset: 2px;
+    }
+
+    .app {
+      width: min(760px, 100vw);
+      height: 100dvh;
+      margin: auto;
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr) auto auto auto;
+      gap: clamp(5px, 1dvh, 10px);
+      padding: max(8px, env(safe-area-inset-top))
+        max(8px, env(safe-area-inset-right))
+        max(8px, env(safe-area-inset-bottom))
+        max(8px, env(safe-area-inset-left));
+    }
+
+    .top {
+      display: grid;
+      gap: 7px;
+    }
+
+    .progress-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .progress {
+      min-width: 0;
+      display: grid;
+      grid-template-columns: repeat(10, minmax(0, 1fr));
+      gap: 5px;
+    }
+
+    .progress span {
+      height: 7px;
+      border-radius: 999px;
+      background: #242927;
+    }
+
+    .progress span.complete,
+    .progress span.current {
+      background: var(--ok);
+    }
+
+    .progress span.current {
+      box-shadow: 0 0 0 2px #22bd5530;
+    }
+
+    .timer {
+      min-width: 72px;
+      color: var(--accent-strong);
+      font: 850 18px/1 ui-monospace, SFMono-Regular, Consolas, monospace;
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+    }
+
+    .title-row {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .eyebrow {
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .seed-button {
+      min-height: 0;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: var(--accent-strong);
+      font: inherit;
+      text-decoration: underline;
+      cursor: pointer;
+    }
+
+    h1 {
+      margin: 1px 0 0;
+      font-size: 19px;
+      line-height: 1;
+      letter-spacing: -.03em;
+    }
+
+    .attempts {
+      color: var(--muted);
+      font-size: 11px;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    .challenge {
+      min-height: 0;
+    }
+
+    .challenge h2 {
+      margin: 0 0 7px;
+      font-size: clamp(16px, 4.4vw, 19px);
+      letter-spacing: -.015em;
+    }
+
+    .rules {
+      display: grid;
+      gap: 2px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .rule {
+      min-height: 27px;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      font-size: 14px;
+      font-weight: 720;
+    }
+
+    .rule-icon {
+      width: 18px;
+      color: var(--muted);
+      font-size: 19px;
+      font-weight: 900;
+      text-align: center;
+    }
+
+    .rule.pass {
+      color: #bdf2cb;
+    }
+
+    .rule.pass .rule-icon {
+      color: #49df78;
+    }
+
+    .rule.fail {
+      color: #ffe6a5;
+    }
+
+    .rule.fail .rule-icon {
+      color: var(--bad);
+    }
+
+    .schedule {
+      min-height: 0;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      gap: 6px;
+      padding: 7px 8px 8px;
+      border: 2px solid #248c83;
+      border-radius: 14px;
+      background: #123c37;
+      transition: border-color .14s, background .14s;
+    }
+
+    .schedule h3 {
+      margin: 0;
+      font-size: 15px;
+      line-height: 1.1;
+      text-align: center;
+    }
+
+    .plot {
+      position: relative;
+      min-height: 0;
+      overflow: hidden;
+      border-radius: 10px;
+      background: #020504;
+    }
+
+    .axis {
+      position: absolute;
+      z-index: 2;
+      top: 11px;
+      bottom: 11px;
+      left: 8px;
+      width: 39px;
+      pointer-events: none;
+    }
+
+    .time-label {
+      position: absolute;
+      left: 0;
+      top: var(--time);
+      color: #e8edeb;
+      font-size: 12px;
+      font-weight: 800;
+      transform: translateY(-50%);
+    }
+
+    .time-label:first-child {
+      transform: none;
+    }
+
+    .time-label:last-child {
+      transform: translateY(-100%);
+    }
+
+    .grid {
+      position: absolute;
+      top: 11px;
+      right: 7px;
+      bottom: 11px;
+      left: 49px;
+      border-bottom: 1px solid var(--line);
+      background: repeating-linear-gradient(
+        to bottom,
+        var(--line) 0,
+        var(--line) 1px,
+        transparent 1px,
+        transparent var(--line-step, 12.5%)
+      );
+    }
+
+    .meeting {
+      position: absolute;
+      min-width: 0;
+      padding: 0;
+      border: 2px solid var(--accent-strong);
+      border-radius: 6px;
+      background: var(--accent);
+      color: #effffc;
+      font-size: clamp(15px, 5vw, 20px);
+      font-weight: 850;
+      cursor: pointer;
+      touch-action: manipulation;
+      transition: background .12s, border-color .12s, color .12s, transform .08s;
+    }
+
+    .meeting:active:not(:disabled) {
+      transform: scale(.97);
+    }
+
+    .meeting[aria-pressed="true"] {
+      border-color: #237c75;
+      background: var(--rejected);
+      color: #d2e7e3;
+    }
+
+    .meeting[aria-pressed="true"]::after {
+      content: "×";
+      position: absolute;
+      top: 1px;
+      right: 4px;
+      color: #8eb5af;
+      font-size: 10px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .meeting:disabled {
+      cursor: default;
+    }
+
+    .schedule.error {
+      border-color: #6e706d;
+      background: #4c4d4b;
+    }
+
+    .schedule.error .meeting[aria-pressed="false"] {
+      border-color: #ffdc61;
+      background: #d9a90c;
+      color: #211a00;
+    }
+
+    .schedule.error .meeting[aria-pressed="true"] {
+      border-color: #5e615f;
+      background: #3c3e3d;
+      color: #d7d9d8;
+    }
+
+    .schedule.success {
+      border-color: #16b74b;
+      background: #073818;
+    }
+
+    .schedule.success .meeting[aria-pressed="false"] {
+      border-color: #66de8b;
+      background: #15b947;
+      color: #f1fff5;
+    }
+
+    .schedule.success .meeting[aria-pressed="true"] {
+      border-color: #5a5d5b;
+      background: #393b3a;
+      color: #d7d9d8;
+    }
+
+    .schedule.audit,
+    .schedule.audit.error,
+    .schedule.audit.success {
+      border-color: #8248d8;
+      background: #321b57;
+    }
+
+    .schedule.audit .meeting[aria-pressed="false"],
+    .schedule.audit.success .meeting[aria-pressed="false"] {
+      border-color: #b083ff;
+      background: #8249df;
+      color: #fff;
+    }
+
+    .schedule.audit .meeting[aria-pressed="true"],
+    .schedule.audit.success .meeting[aria-pressed="true"] {
+      border-color: #7b3ac6;
+      background: #3e206d;
+      color: #e1d5f5;
+    }
+
+    .schedule.audit .meeting[aria-pressed="true"]::after {
+      color: #c6a9ef;
+    }
+
+    .answers {
+      display: grid;
+      gap: 6px;
+    }
+
+    .answers button {
+      min-height: 45px;
+      padding: 7px 12px;
+      border: 2px solid #474b49;
+      border-radius: 10px;
+      background: #151716;
+      color: var(--text);
+      font-weight: 760;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .answers button[aria-pressed="true"] {
+      border-color: #9d65ed;
+      background: #2d1d44;
+    }
+
+    .answers button.wrong {
+      border-color: var(--danger);
+      background: #3a2020;
+    }
+
+    .answers button.correct {
+      border-color: var(--ok);
+      background: #133c20;
+      color: #c9f5d5;
+    }
+
+    .answers button:disabled {
+      cursor: default;
+    }
+
+    .feedback {
+      min-height: 29px;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .feedback.bad {
+      color: #ffe5a0;
+    }
+
+    .feedback.ok {
+      color: #adf0c0;
+      font-weight: 750;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: 1.35fr .85fr .85fr;
+      gap: 7px;
+    }
+
+    .controls button {
+      min-height: 47px;
+      border: 1px solid #3d4946;
+      border-radius: 11px;
+      background: #26302e;
+      color: var(--text);
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .controls .primary {
+      border-color: #d9dedc;
+      background: #e6e8e7;
+      color: #111513;
+    }
+
+    .controls .primary.success {
+      border-color: var(--ok);
+      background: var(--ok);
+      color: #052810;
+    }
+
+    .controls button:disabled {
+      opacity: .38;
+      cursor: default;
+    }
+
+    .overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      display: grid;
+      place-items: center;
+      padding: max(24px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
+      background: var(--bg);
+    }
+
+    .modal {
+      width: min(360px, 100%);
+      text-align: center;
+    }
+
+    .level-tag {
+      display: inline-block;
+      margin-bottom: 8px;
+      color: var(--accent-strong);
+      font-size: 11px;
+      font-weight: 850;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .modal h2 {
+      margin: 0;
+      font-size: 25px;
+      letter-spacing: -.035em;
+    }
+
+    .modal p {
+      margin: 9px 0 22px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .play {
+      width: 100%;
+      min-height: 58px;
+      border: 0;
+      border-radius: 12px;
+      background: var(--accent);
+      color: #061c19;
+      font-size: 20px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .overlay .seed-button {
+      min-height: 44px;
+      margin-top: 8px;
+      padding: 8px 14px;
+      border: 1px solid #3d4946;
+      border-radius: 10px;
+      background: #1b2422;
+      font-size: 13px;
+      text-decoration: none;
+    }
+
+    @media (max-height: 640px) {
+      .app {
+        gap: 4px;
+        padding: max(6px, env(safe-area-inset-top)) max(6px, env(safe-area-inset-right)) max(6px, env(safe-area-inset-bottom)) max(6px, env(safe-area-inset-left));
+      }
+
+      .top {
+        gap: 4px;
+      }
+
+      .progress span {
+        height: 5px;
+      }
+
+      .timer {
+        font-size: 15px;
+      }
+
+      h1 {
+        font-size: 16px;
+      }
+
+      .challenge h2 {
+        margin-bottom: 3px;
+        font-size: 15px;
+      }
+
+      .rule {
+        min-height: 22px;
+        font-size: 12px;
+      }
+
+      .rule-icon {
+        font-size: 16px;
+      }
+
+      .schedule {
+        gap: 4px;
+        padding: 5px 6px 6px;
+      }
+
+      .schedule h3 {
+        font-size: 13px;
+      }
+
+      .feedback {
+        min-height: 24px;
+        font-size: 11px;
+      }
+
+      .answers {
+        gap: 4px;
+      }
+
+      .answers button {
+        min-height: 40px;
+        padding: 5px 9px;
+        font-size: 11px;
+      }
+
+      .controls button {
+        min-height: 42px;
+        font-size: 12px;
+      }
+    }
+
+    @media (max-width: 340px) {
+      .grid {
+        left: 42px;
+      }
+
+      .axis {
+        width: 34px;
+      }
+
+      .time-label {
+        font-size: 11px;
+      }
+
+      .meeting {
+        left: calc(var(--column) * 16.6667% + 2px);
+        width: calc(16.6667% - 4px);
+        border-width: 1px;
+        font-size: 15px;
+      }
+
+      .controls {
+        gap: 4px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        transition-duration: .01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app" aria-label="Benchmark Cronograma de reuniões">
+    <header class="top">
+      <div class="progress-row">
+        <div id="progress" class="progress" role="progressbar" aria-label="Progresso dos níveis" aria-valuemin="1" aria-valuemax="10"></div>
+        <div id="timer" class="timer" aria-label="Tempo">00:00.0</div>
+      </div>
+      <div class="title-row">
+        <div>
+          <div class="eyebrow">Nível <span id="level" data-testid="level">1/10</span> · seed <button id="seed-button" class="seed-button" data-testid="seed-button" type="button"><span id="seed"></span></button></div>
+          <h1>Cronograma</h1>
+        </div>
+        <div id="attempts" class="attempts">0 tentativas</div>
+      </div>
+    </header>
+
+    <section class="challenge" aria-labelledby="objective">
+      <h2 id="objective">Construa um cronograma válido.</h2>
+      <ul class="rules" aria-label="Regras do nível">
+        <li id="rule-conflicts" class="rule"><span class="rule-icon" aria-hidden="true">→</span><span>Sem conflitos</span></li>
+        <li id="rule-count" class="rule"><span class="rule-icon" aria-hidden="true">→</span><span id="rule-count-copy"></span></li>
+        <li id="rule-cutoff" class="rule" hidden><span class="rule-icon" aria-hidden="true">→</span><span id="rule-cutoff-copy"></span></li>
+      </ul>
+    </section>
+
+    <section id="schedule" class="schedule" data-testid="schedule" aria-labelledby="schedule-title">
+      <h3 id="schedule-title">Reuniões com clientes (horas)</h3>
+      <div class="plot">
+        <div class="axis" aria-hidden="true">
+          <span id="axis-start" class="time-label" style="--time:0%">9h</span>
+          <span id="axis-middle" class="time-label" style="--time:50%">13h</span>
+          <span id="axis-end" class="time-label" style="--time:100%">17h</span>
+        </div>
+        <div id="grid" class="grid" aria-label="Reuniões entre 9 e 17 horas"></div>
+      </div>
+    </section>
+
+    <section id="answers" class="answers" aria-label="Escolha os critérios atendidos" hidden>
+      <button data-answer="no-conflicts" data-testid="answer-no-conflicts" type="button" aria-pressed="false">Sem conflitos</button>
+      <button id="answer-criterion" data-answer="maximum" data-testid="answer-criterion" type="button" aria-pressed="false">Maximiza o número de trabalhos aceitos</button>
+      <button data-answer="both" data-testid="answer-both" type="button" aria-pressed="false">Ambos são atendidos</button>
+    </section>
+
+    <p id="feedback" class="feedback" data-testid="feedback" role="status" aria-live="polite"></p>
+
+    <nav class="controls" aria-label="Controles">
+      <button id="check-button" class="primary" data-testid="check-button" type="button">Conferir</button>
+      <button id="reset-button" data-testid="reset-button" type="button">Reiniciar</button>
+      <button id="new-button" data-testid="new-button" type="button">Nova sessão</button>
+    </nav>
+  </main>
+
+  <div id="overlay" class="overlay">
+    <div class="modal">
+      <span id="overlay-level" class="level-tag"></span>
+      <h2 id="overlay-title">Cronograma</h2>
+      <p id="overlay-copy"></p>
+      <button id="start-button" class="play" data-testid="start-button" type="button">Iniciar</button>
+      <button class="tutorial-launch" data-tutorial-button data-testid="tutorial-button" type="button">Tutorial</button>
+      <button id="overlay-seed-button" class="seed-button" data-testid="overlay-seed-button" type="button"></button>
+    </div>
+  </div>
+
+  <script src="../../benchmark-history.js"></script>
+  <script>
+    (() => {
+      const $ = id => document.getElementById(id);
+      const TOTAL_SLOTS = 16;
+      const MEETING_COUNT = 6;
+      // A dificuldade cresce pelo numero de respostas quase validas, sem adicionar blocos a tela.
+      const profiles = [
+        {
+          kind: 'build',
+          name: 'Escolha três',
+          brief: 'Aceite três reuniões que não se sobreponham.',
+          mode: 'accept',
+          target: 3,
+          cutoff: null,
+          nearMin: 0,
+          nearMax: 7
+        },
+        {
+          kind: 'build',
+          name: 'Duas recusas',
+          brief: 'Preserve quatro reuniões e recuse somente duas.',
+          mode: 'reject',
+          target: 4,
+          cutoff: null,
+          nearMin: 2,
+          nearMax: 2
+        },
+        {
+          kind: 'build',
+          name: 'Feche às 15h',
+          brief: 'Aceite três reuniões sem ultrapassar 15h.',
+          mode: 'accept',
+          target: 3,
+          cutoff: 12,
+          nearMin: 4,
+          nearMax: 5
+        },
+        {
+          kind: 'build',
+          name: 'Escolhas enganosas',
+          brief: 'Recuse duas reuniões pensando no dia inteiro.',
+          mode: 'reject',
+          target: 4,
+          cutoff: null,
+          nearMin: 5,
+          nearMax: Infinity
+        },
+        {
+          kind: 'build',
+          name: 'Agenda crítica',
+          brief: 'Cruze quantidade, conflitos e o limite das 15h.',
+          mode: 'accept',
+          target: 3,
+          cutoff: 12,
+          nearMin: 8,
+          nearMax: Infinity
+        },
+        {
+          kind: 'audit',
+          name: 'Audite a quantidade',
+          brief: 'Verifique os conflitos e se exatamente dois trabalhos foram aceitos.',
+          auditCriterion: 'count',
+          target: 2,
+          variant: 0
+        },
+        {
+          kind: 'audit',
+          name: 'Cruze os critérios',
+          brief: 'Verifique os conflitos e se exatamente três trabalhos foram aceitos.',
+          auditCriterion: 'count',
+          target: 3,
+          variant: 1
+        },
+        {
+          kind: 'audit',
+          name: 'Compare alternativas',
+          brief: 'Verifique conflitos e compare com o máximo possível.',
+          auditCriterion: 'maximum',
+          variant: 0
+        },
+        {
+          kind: 'audit',
+          name: 'Seleção ótima',
+          brief: 'Decida se a seleção pronta é compatível e globalmente ótima.',
+          auditCriterion: 'maximum',
+          variant: 1
+        },
+        {
+          kind: 'audit',
+          name: 'Auditoria final',
+          brief: 'Decida quais critérios foram atendidos sem alterar a seleção.',
+          auditCriterion: 'maximum',
+          variant: 2
+        }
+      ];
+
+      const fallbacks = [
+        [[2,6],[8,12],[8,13],[11,16],[6,9],[4,9]],
+        [[7,12],[6,10],[3,6],[0,3],[2,7],[11,15]],
+        [[3,6],[0,5],[11,14],[9,12],[11,15],[5,8]],
+        [[12,15],[7,12],[3,6],[8,11],[5,8],[0,5]],
+        [[13,16],[7,11],[8,13],[4,8],[1,4],[4,7]]
+      ];
+
+      const auditTemplates = {
+        count: {
+          'no-conflicts': [
+            [[0,3,true],[3,7,true],[7,11,true],[2,8,false]],
+            [[1,6,true],[0,3,false],[3,8,false],[8,12,true]]
+          ],
+          count: [
+            [[0,6,true],[4,9,true],[0,4,false],[9,12,false]],
+            [[0,6,true],[5,8,true],[8,12,true],[1,5,false]]
+          ],
+          both: [
+            [[0,5,true],[2,7,false],[5,10,false],[7,12,true]],
+            [[0,3,true],[2,9,false],[3,8,true],[8,12,true]]
+          ]
+        },
+        maximum: {
+          'no-conflicts': [
+            [[2,7,true],[0,4,false],[4,7,false],[7,11,true]],
+            [[1,6,true],[0,3,false],[3,8,false],[8,12,true]],
+            [[2,6,true],[0,3,false],[3,7,false],[7,12,true]]
+          ],
+          maximum: [
+            [[0,5,true],[4,7,true],[7,11,true],[0,4,false]],
+            [[0,6,true],[5,8,true],[8,12,true],[1,5,false]],
+            [[1,6,true],[5,9,true],[9,12,true],[0,5,false]]
+          ],
+          both: [
+            [[0,4,true],[3,7,false],[4,7,true],[7,11,true]],
+            [[0,3,true],[2,9,false],[3,8,true],[8,12,true]],
+            [[0,5,true],[2,8,false],[5,9,true],[9,12,true]]
+          ]
+        }
+      };
+
+      const params = new URLSearchParams(location.search);
+      const rawSeed = params.get('seed');
+      const parsedLevel = Number.parseInt(params.get('level'), 10);
+      let level = Number.isInteger(parsedLevel) ? Math.min(profiles.length, Math.max(1, parsedLevel)) : 1;
+      let seed = /^\d{1,10}$/.test(rawSeed || '') ? Number(rawSeed) >>> 0 : createSeed();
+      let puzzle;
+      let rejected = new Set();
+      let auditAnswer = '';
+      let running = false;
+      let solved = false;
+      let attempts = 0;
+      let startedAt = 0;
+      let elapsed = 0;
+      let timerId = 0;
+
+      function createSeed() {
+        if (globalThis.crypto?.getRandomValues) {
+          return crypto.getRandomValues(new Uint32Array(1))[0];
+        }
+        return Math.floor(Math.random() * 0x100000000) >>> 0;
+      }
+
+      function randomFromSeed(value, salt) {
+        let state = (value ^ Math.imul(salt, 0x9e3779b1)) >>> 0;
+        return () => {
+          state = (state + 0x6d2b79f5) >>> 0;
+          let result = state;
+          result = Math.imul(result ^ (result >>> 15), result | 1);
+          result ^= result + Math.imul(result ^ (result >>> 7), result | 61);
+          return ((result ^ (result >>> 14)) >>> 0) / 4294967296;
+        };
+      }
+
+      function shuffle(values, random) {
+        const copy = values.slice();
+        for (let index = copy.length - 1; index > 0; index--) {
+          const target = Math.floor(random() * (index + 1));
+          [copy[index], copy[target]] = [copy[target], copy[index]];
+        }
+        return copy;
+      }
+
+      function combinations(count, size) {
+        const output = [];
+        function visit(next, chosen) {
+          if (chosen.length === size) {
+            output.push(chosen);
+            return;
+          }
+          for (let index = next; index < count; index++) {
+            visit(index + 1, [...chosen, index]);
+          }
+        }
+        visit(0, []);
+        return output;
+      }
+
+      function conflicts(first, second) {
+        return first.start < second.end && second.start < first.end;
+      }
+
+      function violationCount(meetings, selection, profile) {
+        let violations = 0;
+        if (profile.cutoff !== null) {
+          violations += selection.filter(index => meetings[index].end > profile.cutoff).length;
+        }
+        for (let left = 0; left < selection.length; left++) {
+          for (let right = left + 1; right < selection.length; right++) {
+            if (conflicts(meetings[selection[left]], meetings[selection[right]])) violations++;
+          }
+        }
+        return violations;
+      }
+
+      function analyzeCandidate(meetings, profile) {
+        const selections = combinations(meetings.length, profile.target);
+        const solutions = selections.filter(selection => violationCount(meetings, selection, profile) === 0);
+        if (solutions.length !== 1) return null;
+        const nearMisses = selections.filter(selection => violationCount(meetings, selection, profile) === 1).length;
+        return { solution: solutions[0], nearMisses };
+      }
+
+      function matchesProfile(analysis, profile) {
+        return analysis && analysis.nearMisses >= profile.nearMin && analysis.nearMisses <= profile.nearMax;
+      }
+
+      function randomCandidate(random) {
+        const used = new Set();
+        const meetings = [];
+        while (meetings.length < MEETING_COUNT) {
+          const duration = 3 + Math.floor(random() * 3);
+          const start = Math.floor(random() * (TOTAL_SLOTS + 1 - duration));
+          const key = `${start}-${start + duration}`;
+          if (used.has(key)) continue;
+          used.add(key);
+          meetings.push({ start, end: start + duration });
+        }
+        return meetings;
+      }
+
+      function finishPuzzle(meetings, profile, random) {
+        const ordered = shuffle(meetings, random).map((meeting, index) => ({
+          ...meeting,
+          id: String.fromCharCode(65 + index),
+          column: index
+        }));
+        const analysis = analyzeCandidate(ordered, profile);
+        return {
+          meetings: ordered,
+          solution: new Set(analysis.solution.map(index => ordered[index].id)),
+          nearMisses: analysis.nearMisses
+        };
+      }
+
+      function generateBuildPuzzle(value, levelNumber) {
+        const profile = profiles[levelNumber - 1];
+        const random = randomFromSeed(value, levelNumber);
+        for (let attempt = 0; attempt < 25000; attempt++) {
+          const meetings = randomCandidate(random);
+          if (Math.min(...meetings.map(meeting => meeting.start)) > 2) continue;
+          if (Math.max(...meetings.map(meeting => meeting.end)) < 14) continue;
+          if (profile.cutoff !== null && meetings.filter(meeting => meeting.end > profile.cutoff).length !== 2) continue;
+          const analysis = analyzeCandidate(meetings, profile);
+          if (matchesProfile(analysis, profile)) return finishPuzzle(meetings, profile, random);
+        }
+
+        const meetings = fallbacks[levelNumber - 1].map(([start, end]) => ({ start, end }));
+        const analysis = analyzeCandidate(meetings, profile);
+        if (!matchesProfile(analysis, profile)) throw new Error('Fallback de cronograma inválido.');
+        return finishPuzzle(meetings, profile, random);
+      }
+
+      function maxCompatibleCount(meetings) {
+        for (let size = meetings.length; size >= 1; size--) {
+          const found = combinations(meetings.length, size).some(selection =>
+            selection.every((meetingIndex, position) =>
+              selection.slice(position + 1).every(otherIndex =>
+                !conflicts(meetings[meetingIndex], meetings[otherIndex])
+              )
+            )
+          );
+          if (found) return size;
+        }
+        return 0;
+      }
+
+      function analyzeAudit(meetings, profile) {
+        const accepted = meetings.filter(meeting => meeting.accepted);
+        const noConflicts = accepted.every((meeting, position) =>
+          accepted.slice(position + 1).every(other => !conflicts(meeting, other))
+        );
+        const optimum = maxCompatibleCount(meetings);
+        const criterionMet = profile.auditCriterion === 'count'
+          ? accepted.length === profile.target
+          : accepted.length === optimum;
+        const answer = noConflicts && criterionMet
+          ? 'both'
+          : noConflicts
+            ? 'no-conflicts'
+            : criterionMet
+              ? profile.auditCriterion
+              : '';
+        return { noConflicts, criterionMet, optimum, answer };
+      }
+
+      function generateAuditPuzzle(value, levelNumber) {
+        const profile = profiles[levelNumber - 1];
+        const random = randomFromSeed(value, levelNumber);
+        const answers = ['no-conflicts', profile.auditCriterion, 'both'];
+        const expectedAnswer = answers[Math.floor(random() * answers.length)];
+        const mirror = random() < .5;
+        const source = auditTemplates[profile.auditCriterion][expectedAnswer][profile.variant];
+        const meetings = source.map(([start, end, accepted]) => ({
+          start: mirror ? 12 - end : start,
+          end: mirror ? 12 - start : end,
+          accepted
+        }));
+        const ordered = shuffle(meetings, random).map((meeting, index) => ({
+          ...meeting,
+          id: String.fromCharCode(65 + index),
+          column: index
+        }));
+        const analysis = analyzeAudit(ordered, profile);
+        if (analysis.answer !== expectedAnswer) throw new Error('Auditoria de cronograma inválida.');
+        return { meetings: ordered, ...analysis };
+      }
+
+      function formatSlot(slot) {
+        const minutes = 9 * 60 + slot * 30;
+        const hour = Math.floor(minutes / 60);
+        return minutes % 60 ? `${hour}h30` : `${hour}h`;
+      }
+
+      function formatMonth(slot) {
+        const months = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+        return months[Math.min(slot, months.length - 1)];
+      }
+
+      function formatTime(milliseconds) {
+        const total = Math.max(0, milliseconds);
+        const minutes = Math.floor(total / 60000);
+        const seconds = Math.floor((total % 60000) / 1000);
+        const tenth = Math.floor((total % 1000) / 100);
+        return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${tenth}`;
+      }
+
+      function updateUrl() {
+        const url = new URL(location.href);
+        url.searchParams.set('seed', String(seed));
+        url.searchParams.set('level', String(level));
+        history.replaceState(null, '', url);
+      }
+
+      function updateProgress() {
+        $('progress').innerHTML = profiles.map((_, index) => {
+          const number = index + 1;
+          const state = number < level ? 'complete' : number === level ? 'current' : '';
+          return `<span class="${state}" aria-hidden="true"></span>`;
+        }).join('');
+        $('progress').setAttribute('aria-valuenow', String(level));
+        $('progress').setAttribute('aria-valuetext', `Nível ${level} de ${profiles.length}`);
+      }
+
+      function setRuleState(id, state) {
+        const rule = $(id);
+        rule.classList.toggle('pass', state === 'pass');
+        rule.classList.toggle('fail', state === 'fail');
+        rule.querySelector('.rule-icon').textContent = state === 'pass' ? '✓' : state === 'fail' ? '×' : '→';
+      }
+
+      function resetRuleStates() {
+        setRuleState('rule-conflicts', 'neutral');
+        setRuleState('rule-count', 'neutral');
+        setRuleState('rule-cutoff', 'neutral');
+      }
+
+      function renderRules() {
+        const profile = profiles[level - 1];
+        if (profile.kind === 'audit') {
+          const criterionCopy = profile.auditCriterion === 'count'
+            ? `Aceita ${profile.target} trabalhos`
+            : 'Maximiza o número de trabalhos aceitos';
+          $('objective').textContent = 'Quais critérios foram atendidos?';
+          $('rule-count-copy').textContent = criterionCopy;
+          $('answer-criterion').dataset.answer = profile.auditCriterion;
+          $('answer-criterion').textContent = criterionCopy;
+          $('rule-cutoff').hidden = true;
+          $('rule-cutoff-copy').textContent = '';
+          resetRuleStates();
+          return;
+        }
+
+        $('objective').textContent = 'Construa um cronograma válido.';
+        const rejectedTarget = MEETING_COUNT - profile.target;
+        $('rule-count-copy').textContent = profile.mode === 'reject'
+          ? `Rejeite apenas ${rejectedTarget} reuniões`
+          : `Aceite ${profile.target} reuniões`;
+        $('rule-cutoff').hidden = profile.cutoff === null;
+        $('rule-cutoff-copy').textContent = profile.cutoff === null ? '' : `Nenhuma reunião após ${formatSlot(profile.cutoff)}`;
+        resetRuleStates();
+      }
+
+      function configureTimeline() {
+        const audit = profiles[level - 1].kind === 'audit';
+        $('schedule').classList.toggle('audit', audit);
+        $('schedule-title').textContent = audit ? 'Trabalhos com clientes (meses)' : 'Reuniões com clientes (horas)';
+        $('axis-start').textContent = audit ? 'Jan' : '9h';
+        $('axis-middle').textContent = audit ? 'Jul' : '13h';
+        $('axis-end').textContent = audit ? 'Dez' : '17h';
+        $('grid').setAttribute('aria-label', audit ? 'Trabalhos entre janeiro e dezembro' : 'Reuniões entre 9 e 17 horas');
+        $('grid').style.setProperty('--line-step', audit ? '8.3333%' : '12.5%');
+      }
+
+      function renderMeetings() {
+        const profile = profiles[level - 1];
+        const slots = profile.kind === 'audit' ? 12 : TOTAL_SLOTS;
+        const columns = puzzle.meetings.length;
+        $('grid').innerHTML = '';
+        for (const meeting of puzzle.meetings) {
+          const button = document.createElement('button');
+          button.className = 'meeting';
+          button.type = 'button';
+          button.textContent = meeting.id;
+          button.dataset.meeting = meeting.id;
+          button.dataset.start = String(meeting.start);
+          button.dataset.end = String(meeting.end);
+          button.dataset.testid = `meeting-${meeting.id}`;
+          button.style.top = `${meeting.start / slots * 100}%`;
+          button.style.height = `${(meeting.end - meeting.start) / slots * 100}%`;
+          button.style.left = `calc(${meeting.column / columns * 100}% + 3px)`;
+          button.style.width = `calc(${100 / columns}% - 6px)`;
+          button.addEventListener('click', () => toggleMeeting(meeting.id));
+          $('grid').append(button);
+        }
+        renderSelection();
+      }
+
+      function acceptedMeetings() {
+        return puzzle.meetings.filter(meeting => !rejected.has(meeting.id));
+      }
+
+      function selectionMessage() {
+        const profile = profiles[level - 1];
+        if (profile.kind === 'audit') {
+          return 'Claros: aceitos. Escuros: rejeitados.';
+        }
+        if (profile.mode === 'reject') {
+          return `${rejected.size} de ${MEETING_COUNT - profile.target} reuniões rejeitadas.`;
+        }
+        return `${acceptedMeetings().length} de ${profile.target} reuniões aceitas.`;
+      }
+
+      function renderSelection() {
+        const profile = profiles[level - 1];
+        for (const button of $('grid').querySelectorAll('.meeting')) {
+          const meeting = puzzle.meetings.find(item => item.id === button.dataset.meeting);
+          const isRejected = rejected.has(meeting.id);
+          button.setAttribute('aria-pressed', String(isRejected));
+          if (profile.kind === 'audit') {
+            button.setAttribute('aria-label', `Trabalho ${meeting.id}, de ${formatMonth(meeting.start)} até ${formatMonth(meeting.end)}, ${isRejected ? 'rejeitado' : 'aceito'}.`);
+          } else {
+            button.setAttribute('aria-label', `Reunião ${meeting.id}, ${formatSlot(meeting.start)} às ${formatSlot(meeting.end)}, ${isRejected ? 'rejeitada' : 'aceita'}. Toque para ${isRejected ? 'aceitar' : 'rejeitar'}.`);
+          }
+          button.disabled = profile.kind === 'audit' || !running || solved;
+        }
+        renderAnswers();
+        $('check-button').disabled = solved
+          ? false
+          : profile.kind === 'audit'
+            ? !running || !auditAnswer
+            : !running || acceptedMeetings().length === 0;
+      }
+
+      function renderAnswers() {
+        const audit = profiles[level - 1].kind === 'audit';
+        $('answers').hidden = !audit;
+        for (const button of $('answers').querySelectorAll('button')) {
+          button.setAttribute('aria-pressed', String(button.dataset.answer === auditAnswer));
+          button.disabled = !audit || !running || solved;
+        }
+      }
+
+      function selectAuditAnswer(answer) {
+        if (!running || solved || profiles[level - 1].kind !== 'audit') return;
+        auditAnswer = answer;
+        for (const button of $('answers').querySelectorAll('button')) button.classList.remove('wrong', 'correct');
+        $('feedback').className = 'feedback';
+        $('feedback').textContent = selectionMessage();
+        $('check-button').classList.remove('success');
+        $('check-button').textContent = 'Conferir';
+        resetRuleStates();
+        renderSelection();
+      }
+
+      function clearEvaluation() {
+        if (solved) return;
+        $('schedule').classList.remove('error', 'success');
+        $('check-button').classList.remove('success');
+        $('check-button').textContent = 'Conferir';
+        $('feedback').className = 'feedback';
+        $('feedback').textContent = selectionMessage();
+        resetRuleStates();
+      }
+
+      function toggleMeeting(id) {
+        if (!running || solved || profiles[level - 1].kind === 'audit') return;
+        if (rejected.has(id)) rejected.delete(id);
+        else rejected.add(id);
+        clearEvaluation();
+        renderSelection();
+      }
+
+      function evaluateSelection() {
+        const profile = profiles[level - 1];
+        const accepted = acceptedMeetings();
+        let conflictCount = 0;
+        for (let left = 0; left < accepted.length; left++) {
+          for (let right = left + 1; right < accepted.length; right++) {
+            if (conflicts(accepted[left], accepted[right])) conflictCount++;
+          }
+        }
+        return {
+          countOk: accepted.length === profile.target,
+          conflictsOk: conflictCount === 0,
+          cutoffOk: profile.cutoff === null || accepted.every(meeting => meeting.end <= profile.cutoff),
+          conflictCount
+        };
+      }
+
+      function stopTimer() {
+        clearInterval(timerId);
+        if (running) elapsed = performance.now() - startedAt;
+        $('timer').textContent = formatTime(elapsed);
+      }
+
+      function checkAudit() {
+        if (!running || solved || !auditAnswer) return;
+        attempts++;
+        $('attempts').textContent = `${attempts} ${attempts === 1 ? 'tentativa' : 'tentativas'}`;
+        const selectedButton = $('answers').querySelector(`[data-answer="${auditAnswer}"]`);
+
+        if (auditAnswer !== puzzle.answer) {
+          selectedButton.classList.add('wrong');
+          $('feedback').className = 'feedback bad';
+          $('feedback').textContent = 'Resposta incorreta. Compare novamente os intervalos aceitos.';
+          $('check-button').textContent = 'Tentar de novo';
+          return;
+        }
+
+        solved = true;
+        stopTimer();
+        running = false;
+        setRuleState('rule-conflicts', puzzle.noConflicts ? 'pass' : 'fail');
+        setRuleState('rule-count', puzzle.criterionMet ? 'pass' : 'fail');
+        selectedButton.classList.remove('wrong');
+        selectedButton.classList.add('correct');
+        $('schedule').classList.add('success');
+        $('feedback').className = 'feedback ok';
+        $('feedback').textContent = `Auditoria correta em ${formatTime(elapsed)}.`;
+        $('check-button').classList.add('success');
+        $('check-button').textContent = level === profiles.length ? 'Nova sessão' : 'Continuar';
+        renderSelection();
+        BenchmarkHistory.save({
+          benchmark: 'cronograma',
+          name: 'Cronograma de reuniões',
+          seed,
+          timeMs: elapsed,
+          attempts,
+          metric: { label: 'Tentativas médias', value: attempts },
+          details: {
+            level,
+            mode: 'audit',
+            criterion: profiles[level - 1].auditCriterion,
+            answer: puzzle.answer,
+            accepted: acceptedMeetings().length,
+            optimum: puzzle.optimum,
+            target: profiles[level - 1].target ?? null,
+            firstTry: attempts === 1
+          }
+        });
+      }
+
+      function checkSchedule() {
+        if (profiles[level - 1].kind === 'audit') {
+          checkAudit();
+          return;
+        }
+        if (!running || solved || acceptedMeetings().length === 0) return;
+        attempts++;
+        $('attempts').textContent = `${attempts} ${attempts === 1 ? 'tentativa' : 'tentativas'}`;
+        const result = evaluateSelection();
+        setRuleState('rule-conflicts', result.conflictsOk ? 'pass' : 'fail');
+        setRuleState('rule-count', result.countOk ? 'pass' : 'fail');
+        if (profiles[level - 1].cutoff !== null) setRuleState('rule-cutoff', result.cutoffOk ? 'pass' : 'fail');
+
+        if (result.countOk && result.conflictsOk && result.cutoffOk) {
+          solved = true;
+          stopTimer();
+          running = false;
+          $('schedule').classList.remove('error');
+          $('schedule').classList.add('success');
+          $('feedback').className = 'feedback ok';
+          $('feedback').textContent = `Cronograma válido em ${formatTime(elapsed)}.`;
+          $('check-button').disabled = false;
+          $('check-button').classList.add('success');
+          $('check-button').textContent = level === profiles.length ? 'Nova sessão' : 'Continuar';
+          renderSelection();
+          BenchmarkHistory.save({
+            benchmark: 'cronograma',
+            name: 'Cronograma de reuniões',
+            seed,
+            timeMs: elapsed,
+            attempts,
+            metric: { label: 'Tentativas médias', value: attempts },
+            details: {
+              level,
+              accepted: profiles[level - 1].target,
+              cutoff: profiles[level - 1].cutoff === null ? null : formatSlot(profiles[level - 1].cutoff),
+              nearMisses: puzzle.nearMisses,
+              firstTry: attempts === 1
+            }
+          });
+          return;
+        }
+
+        $('schedule').classList.remove('success');
+        $('schedule').classList.add('error');
+        $('feedback').className = 'feedback bad';
+        const failures = [result.countOk, result.conflictsOk, result.cutoffOk].filter(value => !value).length;
+        $('feedback').textContent = failures === 1 ? 'Uma regra ainda foi violada. Ajuste o cronograma.' : `${failures} regras ainda foram violadas. Ajuste o cronograma.`;
+        $('check-button').textContent = 'Tentar de novo';
+      }
+
+      function startTimer() {
+        clearInterval(timerId);
+        startedAt = performance.now();
+        elapsed = 0;
+        $('timer').textContent = formatTime(0);
+        timerId = setInterval(() => {
+          elapsed = performance.now() - startedAt;
+          $('timer').textContent = formatTime(elapsed);
+        }, 100);
+      }
+
+      function showBriefing() {
+        const profile = profiles[level - 1];
+        $('overlay-level').textContent = `Nível ${level} de ${profiles.length} · seed ${seed}`;
+        $('overlay-title').textContent = profile.name;
+        $('overlay-copy').textContent = profile.brief;
+        $('start-button').textContent = 'Iniciar';
+        $('overlay-seed-button').textContent = `Abrir outra seed para o nível ${level}`;
+        document.querySelector('[data-tutorial-button]').hidden = false;
+        $('overlay').hidden = false;
+      }
+
+      function setup() {
+        clearInterval(timerId);
+        const profile = profiles[level - 1];
+        running = false;
+        solved = false;
+        attempts = 0;
+        elapsed = 0;
+        auditAnswer = '';
+        puzzle = profile.kind === 'audit' ? generateAuditPuzzle(seed, level) : generateBuildPuzzle(seed, level);
+        rejected = profile.kind === 'audit'
+          ? new Set(puzzle.meetings.filter(meeting => !meeting.accepted).map(meeting => meeting.id))
+          : profile.mode === 'accept'
+            ? new Set(puzzle.meetings.map(meeting => meeting.id))
+            : new Set();
+        $('level').textContent = `${level}/${profiles.length}`;
+        $('seed').textContent = seed;
+        $('attempts').textContent = '0 tentativas';
+        $('timer').textContent = formatTime(0);
+        $('schedule').classList.remove('error', 'success');
+        for (const button of $('answers').querySelectorAll('button')) button.classList.remove('wrong', 'correct');
+        $('check-button').className = 'primary';
+        $('check-button').textContent = 'Conferir';
+        $('reset-button').disabled = true;
+        updateProgress();
+        configureTimeline();
+        renderRules();
+        renderMeetings();
+        $('feedback').className = 'feedback';
+        $('feedback').textContent = selectionMessage();
+        updateUrl();
+        showBriefing();
+      }
+
+      function start() {
+        if (running || solved) return;
+        running = true;
+        $('overlay').hidden = true;
+        $('reset-button').disabled = false;
+        renderSelection();
+        startTimer();
+      }
+
+      function nextLevelSeed(value, nextLevel) {
+        const next = (Math.imul(value ^ Math.imul(nextLevel, 0x45d9f3b), 1664525) + 1013904223) >>> 0;
+        return next === value ? (next + 1) >>> 0 : next;
+      }
+
+      function continueSession() {
+        if (!solved) return;
+        if (level === profiles.length) {
+          newSession();
+          return;
+        }
+        seed = nextLevelSeed(seed, level + 1);
+        level++;
+        setup();
+      }
+
+      function reset() {
+        setup();
+      }
+
+      function newSession() {
+        const previousSeed = seed;
+        do seed = createSeed(); while (seed === previousSeed);
+        level = 1;
+        setup();
+      }
+
+      function showSeedError() {
+        if (!$('overlay').hidden) {
+          $('overlay-copy').textContent = 'Seed inválida. Use de 1 a 10 números.';
+        } else {
+          $('feedback').className = 'feedback bad';
+          $('feedback').textContent = 'Seed inválida. Use de 1 a 10 números.';
+        }
+      }
+
+      function openSeed() {
+        const value = window.prompt(`Digite a seed do nível ${level} (até 10 números).`, seed);
+        if (value === null) return;
+        if (!/^\d{1,10}$/.test(value)) {
+          showSeedError();
+          return;
+        }
+        seed = Number(value) >>> 0;
+        setup();
+      }
+
+      $('start-button').addEventListener('click', start);
+      $('check-button').addEventListener('click', () => solved ? continueSession() : checkSchedule());
+      $('reset-button').addEventListener('click', reset);
+      $('new-button').addEventListener('click', newSession);
+      $('seed-button').addEventListener('click', openSeed);
+      $('overlay-seed-button').addEventListener('click', openSeed);
+      for (const button of $('answers').querySelectorAll('button')) {
+        button.addEventListener('click', () => selectAuditAnswer(button.dataset.answer));
+      }
+      setup();
+    })();
+  </script>
+  <script src="../../tutorial.js"></script>
+</body>
+</html>

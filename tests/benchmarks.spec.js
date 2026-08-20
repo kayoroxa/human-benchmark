@@ -86,6 +86,91 @@ async function solvePathPuzzle(page) {
   return commands;
 }
 
+async function readSchedulePuzzle(page) {
+  return page.evaluate(() => {
+    const meetings = [...document.querySelectorAll('.meeting')].map(button => ({
+      id: button.dataset.meeting,
+      start: Number(button.dataset.start),
+      end: Number(button.dataset.end)
+    }));
+    const countCopy = document.querySelector('#rule-count-copy').textContent;
+    const count = Number(countCopy.match(/\d+/)[0]);
+    const target = countCopy.startsWith('Rejeite') ? meetings.length - count : count;
+    const cutoffRule = document.querySelector('#rule-cutoff');
+    const cutoffCopy = document.querySelector('#rule-cutoff-copy').textContent;
+    const cutoffHour = cutoffRule.hidden ? null : Number(cutoffCopy.match(/\d+/)[0]);
+    const cutoff = cutoffHour === null ? null : (cutoffHour - 9) * 2;
+    const selections = [];
+
+    function choose(next, selected) {
+      if (selected.length === target) {
+        selections.push(selected.slice());
+        return;
+      }
+      for (let index = next; index < meetings.length; index++) {
+        selected.push(index);
+        choose(index + 1, selected);
+        selected.pop();
+      }
+    }
+
+    choose(0, []);
+    const conflicts = (first, second) => first.start < second.end && second.start < first.end;
+    const valid = selection => selection.every((meetingIndex, position) => {
+      const meeting = meetings[meetingIndex];
+      if (cutoff !== null && meeting.end > cutoff) return false;
+      return selection.slice(position + 1).every(otherIndex => !conflicts(meeting, meetings[otherIndex]));
+    });
+    const validSelections = selections.filter(valid).map(selection => selection.map(index => meetings[index].id));
+    const wrongSelection = selections.find(selection => !valid(selection)).map(index => meetings[index].id);
+    return { meetings, target, cutoff, validSelections, wrongSelection };
+  });
+}
+
+async function setAcceptedMeetings(page, acceptedIds) {
+  const accepted = new Set(acceptedIds);
+  const meetings = page.locator('.meeting');
+  for (let index = 0; index < await meetings.count(); index++) {
+    const meeting = meetings.nth(index);
+    const id = await meeting.getAttribute('data-meeting');
+    const rejected = await meeting.getAttribute('aria-pressed') === 'true';
+    if (rejected !== !accepted.has(id)) await meeting.click();
+  }
+}
+
+async function readAuditPuzzle(page) {
+  return page.evaluate(() => {
+    const meetings = [...document.querySelectorAll('.meeting')].map(button => ({
+      id: button.dataset.meeting,
+      start: Number(button.dataset.start),
+      end: Number(button.dataset.end),
+      accepted: button.getAttribute('aria-pressed') === 'false'
+    }));
+    const conflicts = (first, second) => first.start < second.end && second.start < first.end;
+    const accepted = meetings.filter(meeting => meeting.accepted);
+    const noConflicts = accepted.every((meeting, position) =>
+      accepted.slice(position + 1).every(other => !conflicts(meeting, other))
+    );
+    let optimum = 0;
+
+    function search(next, chosen) {
+      if (chosen.every((meeting, position) =>
+        chosen.slice(position + 1).every(other => !conflicts(meeting, other)))) {
+        optimum = Math.max(optimum, chosen.length);
+      }
+      for (let index = next; index < meetings.length; index++) search(index + 1, [...chosen, meetings[index]]);
+    }
+
+    search(0, []);
+    const criterionCopy = document.querySelector('#rule-count-copy').textContent;
+    const criterion = criterionCopy.startsWith('Aceita') ? 'count' : 'maximum';
+    const target = criterion === 'count' ? Number(criterionCopy.match(/\d+/)[0]) : null;
+    const criterionMet = criterion === 'count' ? accepted.length === target : accepted.length === optimum;
+    const answer = noConflicts && criterionMet ? 'both' : noConflicts ? 'no-conflicts' : criterionMet ? criterion : '';
+    return { meetings, noConflicts, criterion, criterionMet, target, optimum, answer };
+  });
+}
+
 test('index exposes every implemented benchmark', async ({ page }) => {
   await page.goto('/');
 
@@ -94,6 +179,7 @@ test('index exposes every implemented benchmark', async ({ page }) => {
   for (const href of [
     'benchmarks/ordenacao/',
     'benchmarks/diagnostico/',
+    'benchmarks/cronograma/',
     'benchmarks/agenda/',
     'benchmarks/carteira/',
     'benchmarks/regra-oculta/',
@@ -125,6 +211,7 @@ test('every play overlay offers a guided tutorial without starting the session',
   const tutorials = [
     ['/benchmarks/ordenacao/?seed=abc', 5, true],
     ['/benchmarks/diagnostico/?seed=1', 5, true],
+    ['/benchmarks/cronograma/?seed=21&level=3', 5, true],
     ['/benchmarks/agenda/?seed=7', 5, true],
     ['/benchmarks/carteira/?seed=10', 5, true],
     ['/benchmarks/regra-oculta/?seed=0', 5, true],
@@ -182,6 +269,119 @@ test('seed control opens a requested diagnostic instance', async ({ page }) => {
   await expect(page).toHaveURL(/seed=2/);
   await expect(page.locator('#seed-value')).toHaveText('2');
   await expect(page.locator('#overlay')).toBeVisible();
+});
+
+test('meeting schedule preserves a wrong attempt and advances with a new level seed', async ({ page }) => {
+  await start(page, '/benchmarks/cronograma/?seed=21&level=2');
+  const puzzle = await readSchedulePuzzle(page);
+  expect(puzzle.validSelections).toHaveLength(1);
+  await expect(page.locator('#rule-count-copy')).toHaveText('Rejeite apenas 2 reuniões');
+
+  await page.getByTestId('reset-button').click();
+  await expect(page.locator('#overlay')).toBeVisible();
+  expect((await readSchedulePuzzle(page)).meetings).toEqual(puzzle.meetings);
+  await page.getByTestId('start-button').click();
+
+  await setAcceptedMeetings(page, puzzle.wrongSelection);
+  const rejectedBeforeCheck = await page.locator('.meeting[aria-pressed="true"]').evaluateAll(buttons => buttons.map(button => button.dataset.meeting));
+  await page.getByTestId('check-button').click();
+  await expect(page.getByTestId('feedback')).toContainText('regra');
+  await expect(page.getByTestId('check-button')).toHaveText('Tentar de novo');
+  const rejectedAfterCheck = await page.locator('.meeting[aria-pressed="true"]').evaluateAll(buttons => buttons.map(button => button.dataset.meeting));
+  expect(rejectedAfterCheck).toEqual(rejectedBeforeCheck);
+
+  await setAcceptedMeetings(page, puzzle.validSelections[0]);
+  await page.getByTestId('check-button').click();
+  await expect(page.getByTestId('feedback')).toContainText('Cronograma válido');
+  await expect(page.getByTestId('check-button')).toHaveText('Continuar');
+  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('benchmark-history-v1')).at(-1));
+  expect(saved.details).toMatchObject({ level: 2, accepted: 4 });
+
+  await page.getByTestId('check-button').click();
+  await expect(page.locator('#overlay')).toBeVisible();
+  await expect(page.getByTestId('level')).toHaveText('3/10');
+  await expect(page).toHaveURL(/level=3/);
+  await expect(page).not.toHaveURL(/seed=21(?:&|$)/);
+});
+
+test('every meeting schedule level has one valid answer and fits a compact phone', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 568 });
+  const pageErrors = [];
+  page.on('pageerror', error => pageErrors.push(error.message));
+  for (let level = 1; level <= 5; level++) {
+    await page.goto(`/benchmarks/cronograma/?seed=${100 + level}&level=${level}`);
+    const puzzle = await readSchedulePuzzle(page);
+    expect(puzzle.validSelections).toHaveLength(1);
+    await page.getByTestId('start-button').click();
+    await setAcceptedMeetings(page, puzzle.validSelections[0]);
+    await page.getByTestId('check-button').click();
+    await expect(page.getByTestId('feedback')).toContainText('Cronograma válido');
+    await expectPuzzleFitsViewport(page);
+    const geometry = await page.evaluate(() => ({
+      meetings: [...document.querySelectorAll('.meeting')].map(element => {
+        const rect = element.getBoundingClientRect();
+        return { width: rect.width, height: rect.height, left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom };
+      }),
+      controls: [...document.querySelectorAll('.controls button')].map(element => element.getBoundingClientRect().height),
+      viewport: { width: innerWidth, height: innerHeight }
+    }));
+    expect(geometry.meetings.every(rect => rect.width >= 34 && rect.height >= 40)).toBe(true);
+    expect(geometry.meetings.every(rect => rect.left >= 0 && rect.right <= geometry.viewport.width && rect.top >= 0 && rect.bottom <= geometry.viewport.height)).toBe(true);
+    expect(geometry.controls.every(height => height >= 40)).toBe(true);
+  }
+  expect(pageErrors).toEqual([]);
+});
+
+test('audit levels cover fixed counts, maximum count, and both criteria', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 568 });
+  const scenarios = [
+    { level: 6, seed: 10, criterion: 'count', answer: 'both' },
+    { level: 7, seed: 1, criterion: 'count', answer: 'no-conflicts' },
+    { level: 8, seed: 2, criterion: 'maximum', answer: 'maximum' },
+    { level: 9, seed: 4, criterion: 'maximum', answer: 'maximum' },
+    { level: 10, seed: 1, criterion: 'maximum', answer: 'both' }
+  ];
+
+  for (const scenario of scenarios) {
+    await page.goto(`/benchmarks/cronograma/?seed=${scenario.seed}&level=${scenario.level}`);
+    const audit = await readAuditPuzzle(page);
+    expect(audit.criterion).toBe(scenario.criterion);
+    expect(audit.answer).toBe(scenario.answer);
+    const criterionCopy = scenario.criterion === 'count'
+      ? `Aceita ${audit.target} trabalhos`
+      : 'Maximiza o número de trabalhos aceitos';
+    await expect(page.locator('#rule-count-copy')).toHaveText(criterionCopy);
+    await expect(page.getByTestId('answer-criterion')).toHaveText(criterionCopy);
+    await page.getByTestId('start-button').click();
+
+    if (scenario.level === 6) {
+      await page.getByTestId('reset-button').click();
+      expect((await readAuditPuzzle(page)).meetings).toEqual(audit.meetings);
+      await page.getByTestId('start-button').click();
+    }
+
+    await expect(page.locator('.meeting')).toHaveCount(4);
+    await expect(page.locator('.meeting').first()).toBeDisabled();
+    await expect(page.locator('#answers')).toBeVisible();
+
+    if (scenario.level === 8) {
+      const acceptedBefore = audit.meetings.filter(meeting => meeting.accepted).map(meeting => meeting.id);
+      await page.getByTestId('answer-no-conflicts').click();
+      await page.getByTestId('check-button').click();
+      await expect(page.getByTestId('feedback')).toContainText('Resposta incorreta');
+      const acceptedAfter = await page.locator('.meeting[aria-pressed="false"]').evaluateAll(buttons => buttons.map(button => button.dataset.meeting));
+      expect(acceptedAfter).toEqual(acceptedBefore);
+    }
+
+    await page.locator(`#answers [data-answer="${scenario.answer}"]`).click();
+    await page.getByTestId('check-button').click();
+    await expect(page.getByTestId('feedback')).toContainText('Auditoria correta');
+    const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('benchmark-history-v1'))[0]);
+    expect(saved.details).toMatchObject({ level: scenario.level, mode: 'audit', criterion: scenario.criterion, answer: scenario.answer });
+    await expectPuzzleFitsViewport(page);
+    const answerHeights = await page.locator('#answers button').evaluateAll(buttons => buttons.map(button => button.getBoundingClientRect().height));
+    expect(answerHeights.every(height => height >= 40)).toBe(true);
+  }
 });
 
 test('schedule benchmark produces the dependency-safe optimum', async ({ page }) => {
@@ -252,6 +452,18 @@ test('hidden-rule benchmark classifies the eight seeded cases', async ({ page })
   await expectPuzzleFitsViewport(page);
 });
 
+test('hidden-rule examples disprove first-symbol repetition for the transition rule', async ({ page }) => {
+  await page.goto('/benchmarks/regra-oculta/?seed=15');
+
+  const examples = await page.locator('.example').allInnerTexts();
+  const hasUniqueFirstSymbol = examples.some(example => {
+    const symbols = example.trim().split(/\s+/);
+    return symbols.slice(1).every(symbol => symbol !== symbols[0]);
+  });
+
+  expect(hasUniqueFirstSymbol).toBe(true);
+});
+
 test('flow benchmark preserves the critical route and finds minimum cost', async ({ page }) => {
   await start(page, '/benchmarks/fluxo/?seed=0');
 
@@ -289,20 +501,56 @@ test('word-memory benchmark updates score, spends lives, and ends after three er
   await expectPuzzleFitsViewport(page);
 });
 
-test('path benchmark enforces its exact budget and animates a procedural solution', async ({ page }) => {
-  await start(page, '/benchmarks/caminho/?seed=42');
+test('path benchmark advances from movement to curves', async ({ page }) => {
+  await start(page, '/benchmarks/caminho/?seed=42&level=1');
   const commands = await solvePathPuzzle(page);
-  expect(commands.length).toBeGreaterThanOrEqual(8);
+  expect(commands).toEqual(['forward', 'forward', 'forward', 'forward']);
+  await expect(page.getByTestId('level')).toHaveText('1/7');
+  await expect(page.getByTestId('target')).toHaveText('Meta 4');
+  const toolbox = page.locator('.blocklyFlyout:not(.blocklyTrashcanFlyout)');
+  await expect(toolbox).toContainText('avançar');
+  await expect(toolbox).not.toContainText('esquerda');
+
+  await page.evaluate(program => {
+    const workspace = window.pathWorkspace;
+    let previous = null;
+    for (const command of program) {
+      const block = workspace.newBlock(command === 'forward' ? 'move_forward' : command);
+      block.initSvg();
+      block.render();
+      if (previous) previous.nextConnection.connect(block.previousConnection);
+      else block.moveBy(70, 30);
+      previous = block;
+    }
+  }, commands);
+  await page.getByTestId('execute-button').click();
+  await expect(page.locator('#overlay')).toBeVisible({ timeout: 10000 });
+  await expect(page.locator('#overlay-title')).toHaveText('Nível 1 concluído');
+  await expect(page.getByTestId('start-button')).toHaveText('Nível 2');
+  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('benchmark-history-v1')).at(-1));
+  expect(saved.details).toMatchObject({ level: 1, blocks: 4, target: 4, firstTry: true });
+
+  await page.getByTestId('start-button').click();
+  await expect(page.locator('#overlay')).toBeHidden();
+  await expect(page.getByTestId('level')).toHaveText('2/7');
+  await expect(page.getByTestId('target')).toHaveText('Meta 8');
+  await expect(toolbox).toContainText('vire à esquerda');
+});
+
+test('path benchmark allows a complete program within its level limit', async ({ page }) => {
+  await start(page, '/benchmarks/caminho/?seed=42&level=2');
+  const commands = await solvePathPuzzle(page);
+  expect(commands).toHaveLength(8);
   const toolbox = page.locator('.blocklyFlyout:not(.blocklyTrashcanFlyout)');
   await expect(toolbox).toBeVisible();
-  await expect(toolbox).toContainText('repetir até');
-  await expect(toolbox).toContainText('se caminho à');
-  await expect(toolbox).toContainText('senão');
+  await expect(toolbox).toContainText('vire à direita');
+  await expect(toolbox).not.toContainText('repetir até');
   await expect(page.getByTestId('execute-button')).toBeDisabled();
 
   const firstToolboxBlock = page.locator('.blocklyFlyout:not(.blocklyTrashcanFlyout) .blocklyDraggable').first();
   await firstToolboxBlock.dragTo(page.getByTestId('program'), { targetPosition: { x: 230, y: 60 } });
-  await expect(page.getByTestId('budget')).toHaveText(`1/${commands.length} blocos`);
+  await expect(page.getByTestId('budget')).toHaveText(`Restam ${commands.length - 1} ${commands.length - 1 === 1 ? 'bloco' : 'blocos'}`);
+  await expect(page.getByTestId('execute-button')).toBeEnabled();
 
   await page.evaluate(program => {
     const workspace = window.pathWorkspace;
@@ -318,8 +566,8 @@ test('path benchmark enforces its exact budget and animates a procedural solutio
       previous = block;
     }
   }, commands.slice(0, -1));
-  await expect(page.getByTestId('budget')).toHaveText(`${commands.length - 1}/${commands.length} blocos`);
-  await expect(page.getByTestId('execute-button')).toBeDisabled();
+  await expect(page.getByTestId('budget')).toHaveText('Restam 1 bloco');
+  await expect(page.getByTestId('execute-button')).toBeEnabled();
 
   await page.evaluate(command => {
     const workspace = window.pathWorkspace;
@@ -330,7 +578,7 @@ test('path benchmark enforces its exact budget and animates a procedural solutio
     block.render();
     previous.nextConnection.connect(block.previousConnection);
   }, commands.at(-1));
-  await expect(page.getByTestId('budget')).toHaveText(`${commands.length}/${commands.length} blocos`);
+  await expect(page.getByTestId('budget')).toHaveText('Limite atingido');
   await expect(page.getByTestId('execute-button')).toBeEnabled();
 
   await page.getByTestId('execute-button').click();
@@ -348,8 +596,84 @@ test('path benchmark enforces its exact budget and animates a procedural solutio
   await expectPuzzleFitsViewport(page);
 });
 
-test('path benchmark keeps the same procedural maze after reset', async ({ page }) => {
-  await start(page, '/benchmarks/caminho/?seed=9876');
+test('path benchmark requires repetition to meet the pattern level budget', async ({ page }) => {
+  await start(page, '/benchmarks/caminho/?seed=12&level=3');
+  const toolbox = page.locator('.blocklyFlyout:not(.blocklyTrashcanFlyout)');
+  await expect(page.getByTestId('level')).toHaveText('3/7');
+  await expect(page.getByTestId('target')).toHaveText('Meta 5');
+  await expect(page.getByTestId('budget')).toHaveText('Restam 6 blocos');
+  await expect(toolbox).toContainText('repetir até');
+  await expect(toolbox).not.toContainText('se caminho à');
+
+  await page.evaluate(() => {
+    const workspace = window.pathWorkspace;
+    const repeat = workspace.newBlock('repeat_until_goal');
+    repeat.initSvg();
+    repeat.render();
+    repeat.moveBy(70, 30);
+    let previous = null;
+    for (const type of ['move_forward', 'turn_right', 'move_forward', 'turn_left']) {
+      const block = workspace.newBlock(type);
+      block.initSvg();
+      block.render();
+      if (previous) previous.nextConnection.connect(block.previousConnection);
+      else repeat.getInput('DO').connection.connect(block.previousConnection);
+      previous = block;
+    }
+  });
+  await expect(page.getByTestId('budget')).toHaveText('Restam 1 bloco');
+  await expect(page.getByTestId('feedback')).toContainText('Meta de blocos atingida');
+  await page.getByTestId('execute-button').click();
+  await expect(page.locator('#overlay-title')).toHaveText('Nível 3 concluído', { timeout: 10000 });
+});
+
+test('path benchmark level strategies solve conditions through mastery', async ({ page }) => {
+  const scenarios = [
+    { level: 4, seed: 2, kind: 'single', turn: 'RIGHT', turnType: 'turn_right' },
+    { level: 5, seed: 2, kind: 'fallback', turn: 'RIGHT', turnType: 'turn_right', fallbackType: 'turn_left' },
+    { level: 6, seed: 2, kind: 'fallback', turn: 'RIGHT', turnType: 'turn_right', fallbackType: 'turn_left' },
+    { level: 7, seed: 2, kind: 'fallback', turn: 'LEFT', turnType: 'turn_left', fallbackType: 'turn_right' },
+    { level: 7, seed: 6, kind: 'fallback', turn: 'RIGHT', turnType: 'turn_right', fallbackType: 'turn_left' }
+  ];
+
+  for (const scenario of scenarios) {
+    await start(page, `/benchmarks/caminho/?seed=${scenario.seed}&level=${scenario.level}`);
+    await page.evaluate(config => {
+      const workspace = window.pathWorkspace;
+      const create = type => {
+        const block = workspace.newBlock(type);
+        block.initSvg();
+        block.render();
+        return block;
+      };
+      const repeat = create('repeat_until_goal');
+      repeat.moveBy(70, 30);
+      const decision = create(config.kind === 'single' ? 'if_path' : 'if_else_path');
+      decision.setFieldValue(config.turn, 'DIRECTION');
+      repeat.getInput('DO').connection.connect(decision.previousConnection);
+      const turn = create(config.turnType);
+      decision.getInput('DO').connection.connect(turn.previousConnection);
+
+      if (config.kind === 'fallback') {
+        const straight = create('if_else_path');
+        straight.setFieldValue('FRONT', 'DIRECTION');
+        decision.getInput('ELSE').connection.connect(straight.previousConnection);
+        const fallback = create(config.fallbackType);
+        straight.getInput('ELSE').connection.connect(fallback.previousConnection);
+      }
+
+      const forward = create('move_forward');
+      decision.nextConnection.connect(forward.previousConnection);
+    }, scenario);
+
+    await expect(page.getByTestId('feedback')).toContainText('Meta de blocos atingida');
+    await page.getByTestId('execute-button').click();
+    await expect(page.locator('#overlay-title')).toHaveText(scenario.level === 7 ? 'Sessão concluída' : `Nível ${scenario.level} concluído`, { timeout: 10000 });
+  }
+});
+
+test('path benchmark keeps the same procedural maze and level after reset', async ({ page }) => {
+  await start(page, '/benchmarks/caminho/?seed=9876&level=6');
   const initial = await page.locator('[data-edge]').evaluateAll(edges => edges.map(edge => edge.dataset.edge));
   await page.evaluate(() => {
     const block = window.pathWorkspace.newBlock('move_forward');
@@ -359,9 +683,18 @@ test('path benchmark keeps the same procedural maze after reset', async ({ page 
   await page.getByTestId('reset-button').click();
 
   await expect(page.locator('#overlay')).toBeVisible();
-  await expect(page.getByTestId('budget')).toHaveText(/^0\/\d+ blocos$/);
+  await expect(page.getByTestId('level')).toHaveText('6/7');
+  await expect(page.getByTestId('budget')).toHaveText(/^Restam \d+ blocos$/);
   const reset = await page.locator('[data-edge]').evaluateAll(edges => edges.map(edge => edge.dataset.edge));
   expect(reset).toEqual(initial);
+});
+
+test('path benchmark levels fit a compact phone viewport', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 568 });
+  await start(page, '/benchmarks/caminho/?seed=6&level=7');
+  await expectPuzzleFitsViewport(page);
+  const controls = await page.locator('.controls button').evaluateAll(buttons => buttons.map(button => button.getBoundingClientRect().height));
+  expect(controls.every(height => height >= 40)).toBe(true);
 });
 
 test('new benchmark workspaces remain bounded on desktop', async ({ page }) => {
@@ -369,6 +702,7 @@ test('new benchmark workspaces remain bounded on desktop', async ({ page }) => {
 
   for (const path of [
     '/benchmarks/diagnostico/?seed=1',
+    '/benchmarks/cronograma/?seed=2&level=8',
     '/benchmarks/agenda/?seed=7',
     '/benchmarks/carteira/?seed=10',
     '/benchmarks/regra-oculta/?seed=0',

@@ -22,6 +22,16 @@
         { target: '#submit-button', title: 'Confirme o diagnostico', text: 'Toque no modulo suspeito e depois em Diagnosticar. Uma escolha errada conta como tentativa, mas o painel continua aberto para voce revisar o raciocinio.', example: 'Reiniciar repete o mesmo defeito; Novo gera outro diagnostico.' }
       ]
     },
+    cronograma: {
+      title: 'Tutorial de cronograma',
+      steps: [
+        { target: '#schedule', title: 'Qual e o objetivo?', text: 'Nos primeiros niveis, monte o conjunto pedido sem sobreposicoes. Nos niveis finais, uma selecao aparece pronta e voce deve auditar os criterios atendidos.', example: 'Uma reuniao de 10h a 12h conflita com outra de 11h a 13h.' },
+        { target: '[data-testid="meeting-A"]', title: 'Aceite ou rejeite', text: 'Cada bloco com uma letra representa um intervalo. Claro significa aceito; escuro com um x significa rejeitado. Na montagem, toque no bloco inteiro para alternar.', example: 'Nos niveis Aceite 3, todos comecam rejeitados; escolha os tres que ficarao.' },
+        { target: '#schedule', title: 'Compare inicio e fim', text: 'Dois blocos entram juntos somente quando um termina antes de o outro comecar. Horarios que apenas encostam podem ser usados em sequencia.', example: '9h-11h e 11h-13h nao conflitam; 9h-11h e 10h-12h conflitam.' },
+        { target: '.rules', title: 'Cruze todas as regras', text: 'Sem conflitos verifica a compatibilidade. Maximizar exige comparar a quantidade aceita com a melhor combinacao possivel, nao apenas com uma selecao que parece cheia.', example: 'Uma selecao de dois trabalhos pode nao ter conflitos e ainda perder para outra combinacao com tres.' },
+        { target: '#check-button', title: 'Confira e ajuste', text: 'Toque em Conferir quando tiver uma resposta. O erro preserva a montagem ou a alternativa marcada para que voce revise somente o raciocinio necessario.', example: 'Reiniciar repete nivel e seed; Nova sessao volta ao nivel 1 com outras seeds.' }
+      ]
+    },
     agenda: {
       title: 'Tutorial de agenda',
       steps: [
@@ -76,10 +86,10 @@
       title: 'Tutorial do caminho',
       steps: [
         { target: '#board', title: 'Qual e o objetivo?', text: 'Leve o personagem ate o pino vermelho seguindo somente as estradas. O personagem comeca apontando para uma direcao especifica e nao atravessa espacos fora do caminho.', example: 'O pino marca apenas a chegada; voce precisa decidir cada giro e cada avanco desde a posicao inicial.' },
-        { target: '.blocklyFlyout', title: 'Escolha os comandos', text: 'Avancar move uma casa na direcao atual. Os giros mudam a direcao; repeticao e condicoes permitem montar uma estrategia que reage ao caminho.', example: 'Para entrar numa estrada a direita: encaixe Direita e depois Avancar.' },
+        { target: '.blocklyFlyout', title: 'Aprenda por etapas', text: 'Avancar aparece primeiro. Giros, repeticao e condicoes entram nos niveis seguintes, sempre depois que o conceito anterior foi praticado.', example: 'Cada nivel acrescenta somente uma nova forma de pensar o programa.' },
         { target: '#blockly-editor', title: 'Monte na ordem', text: 'Arraste os blocos da faixa cinza para a area branca e encaixe as pecas. Blocos dentro de faca pertencem ao comando de repeticao ou decisao que os envolve.', example: 'A execucao comeca no bloco mais alto e segue cada encaixe de cima para baixo.' },
-        { target: '#budget', title: 'Use o limite exato', text: 'A fase exige exatamente a quantidade mostrada de blocos. O botao Executar so fica disponivel quando todos os espacos estiverem preenchidos.', example: 'Se aparece 7/9 blocos, ainda faltam exatamente dois comandos.' },
-        { target: '#execute-button', title: 'Execute e observe', text: 'O personagem gira primeiro e depois se desloca quando recebe Avancar. Se a rota falhar, seu programa permanece montado para que voce ajuste somente os blocos necessarios.', example: 'Reiniciar repete esta seed; Novo gera outro labirinto procedural.' }
+        { target: '#budget', title: 'Use poucos blocos', text: 'Meta mostra o tamanho da melhor estrategia conhecida; o contador mostra quantos blocos ainda cabem. Voce pode executar antes de zerar.', example: 'Meta 5 e Restam 2: ainda cabem dois blocos, mas a melhor solucao usa cinco.' },
+        { target: '#execute-button', title: 'Execute e observe', text: 'O personagem gira primeiro e depois se desloca quando recebe Avancar. Se a rota falhar, seu programa permanece montado para que voce ajuste somente os blocos necessarios.', example: 'Reiniciar repete o nivel; Nova sessao volta ao nivel 1 com outra seed.' }
       ]
     }
   };
